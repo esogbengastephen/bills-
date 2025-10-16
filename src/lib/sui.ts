@@ -27,26 +27,22 @@ export const SUI_TOKEN_ADDRESSES = {
   
   // Testnet token addresses (using test tokens)
   testnet: {
-    USDC: '0x2::usdc::USDC', // Test USDC on testnet
-    USDT: '0x2::usdt::USDT'  // Test USDT on testnet
+    USDC: '0x2::usdc::USDC' // Test USDC on testnet
   },
   
   // Mainnet token addresses
   mainnet: {
-    USDC: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN',
-    USDT: '0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN'
+    USDC: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN'
   },
   
   // Devnet token addresses (using test tokens)
   devnet: {
-    USDC: '0x2::usdc::USDC',
-    USDT: '0x2::usdt::USDT'
+    USDC: '0x2::usdc::USDC'
   },
   
   // Localnet token addresses (using test tokens)
   localnet: {
-    USDC: '0x2::usdc::USDC',
-    USDT: '0x2::usdt::USDT'
+    USDC: '0x2::usdc::USDC'
   }
 } as const
 
@@ -58,16 +54,14 @@ export function getTokenAddresses() {
   if (typeof networkAddresses === 'object' && 'USDC' in networkAddresses) {
     return {
       SUI: SUI_TOKEN_ADDRESSES.SUI,
-      USDC: networkAddresses.USDC,
-      USDT: networkAddresses.USDT
+      USDC: networkAddresses.USDC
     }
   }
   
   // Fallback to testnet
   return {
     SUI: SUI_TOKEN_ADDRESSES.SUI,
-    USDC: SUI_TOKEN_ADDRESSES.testnet.USDC,
-    USDT: SUI_TOKEN_ADDRESSES.testnet.USDT
+    USDC: SUI_TOKEN_ADDRESSES.testnet.USDC
   }
 }
 
@@ -90,13 +84,6 @@ export function getTokenMetadata() {
       icon: 'U',
       address: tokenAddresses.USDC
     },
-    USDT: {
-      symbol: 'USDT',
-      name: 'Tether USD',
-      decimals: 6,
-      icon: 'T',
-      address: tokenAddresses.USDT
-    }
   }
 }
 
@@ -124,7 +111,7 @@ export async function getTokenBalance(address: string, tokenType: string): Promi
       })
       
       const totalBalance = coins.data.reduce((sum, coin) => sum + Number(coin.balance), 0)
-      const decimals = tokenType === tokenAddresses.USDC ? 6 : 6 // Both USDC and USDT have 6 decimals
+      const decimals = 6 // USDC has 6 decimals
       
       return (totalBalance / Math.pow(10, decimals)).toFixed(2)
     }
@@ -138,23 +125,20 @@ export async function getTokenBalance(address: string, tokenType: string): Promi
 export async function getAllTokenBalances(address: string) {
   try {
     const tokenAddresses = getTokenAddresses()
-    const [suiBalance, usdcBalance, usdtBalance] = await Promise.all([
+    const [suiBalance, usdcBalance] = await Promise.all([
       getTokenBalance(address, 'SUI'),
-      getTokenBalance(address, tokenAddresses.USDC),
-      getTokenBalance(address, tokenAddresses.USDT)
+      getTokenBalance(address, tokenAddresses.USDC)
     ])
 
     return {
       SUI: suiBalance,
-      USDC: usdcBalance,
-      USDT: usdtBalance
+      USDC: usdcBalance
     }
   } catch (error) {
     console.error('Error fetching all token balances:', error)
     return {
       SUI: '0.00',
-      USDC: '0.00',
-      USDT: '0.00'
+      USDC: '0.00'
     }
   }
 }
@@ -174,7 +158,7 @@ export function createTransferTransaction(
   // Convert amount to smallest unit
   const decimals = tokenType === 'SUI' 
     ? 9 
-    : 6 // Both USDC and USDT have 6 decimals
+    : 6 // USDC has 6 decimals
   
   const amountInSmallestUnit = Math.floor(parseFloat(amount) * Math.pow(10, decimals))
   

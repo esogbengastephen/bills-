@@ -7,7 +7,6 @@ A modern, decentralized bill payment application built on Sui blockchain with Ci
 ### 💳 Multi-Token Support
 - **SUI**: Native Sui blockchain payments
 - **USDC**: Circle API integration for USD Coin
-- **USDT**: Circle API integration for Tether USD
 
 ### 📱 Services Supported
 - **Airtime Top-up**: MTN, Airtel, GLO, 9mobile
@@ -129,7 +128,7 @@ sui client publish --gas-budget 100000000
 ### For Users
 1. **Connect Wallet**: Use Sui dApp Kit wallet
 2. **Select Service**: Choose airtime, data, electricity, or TV
-3. **Choose Token**: SUI, USDC, or USDT
+3. **Choose Token**: SUI or USDC
 4. **Enter Details**: Phone number, amount, etc.
 5. **Pay**: Complete payment via blockchain or Circle API
 
@@ -174,7 +173,7 @@ CLUBKONNECT_MOCK_MODE="true"
 
 ### Testnet Tokens
 - Get test SUI from Sui testnet faucet
-- Use Circle sandbox for test USDC/USDT
+- Use Circle sandbox for test USDC
 
 ## 📊 Database Schema
 

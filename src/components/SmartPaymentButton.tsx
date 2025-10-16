@@ -39,7 +39,7 @@ export function PaymentButton({
   const [showCirclePayment, setShowCirclePayment] = useState(false)
 
   // Check if this is a Circle-supported token
-  const isCircleToken = tokenType === 'USDC' || tokenType === 'USDT'
+  const isCircleToken = tokenType === 'USDC'
 
   const handlePayment = async () => {
     if (!currentAccount?.address) {

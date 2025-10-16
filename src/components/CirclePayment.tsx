@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger'
 
 interface CirclePaymentProps {
   amount: string
-  tokenType: 'USDC' | 'USDT'
+  tokenType: 'USDC'
   serviceType: 'airtime' | 'data' | 'electricity' | 'tv'
   serviceDetails: any
   onSuccess: (paymentId: string) => void

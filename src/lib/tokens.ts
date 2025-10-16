@@ -20,12 +20,6 @@ export const SUI_TOKENS: Token[] = [
     balance: '0.00', 
     icon: SUI_TOKEN_METADATA.USDC.icon 
   },
-  { 
-    symbol: SUI_TOKEN_METADATA.USDT.symbol, 
-    name: SUI_TOKEN_METADATA.USDT.name, 
-    balance: '0.00', 
-    icon: SUI_TOKEN_METADATA.USDT.icon 
-  },
 ]
 
 export const DEFAULT_TOKEN = SUI_TOKENS[0] // SUI as default

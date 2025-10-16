@@ -18,9 +18,9 @@ export class CircleService {
   }
 
   /**
-   * Get wallet balance for USDC/USDT
+   * Get wallet balance for USDC
    */
-  async getWalletBalance(walletId: string, tokenType: 'USDC' | 'USDT'): Promise<number> {
+  async getWalletBalance(walletId: string, tokenType: 'USDC'): Promise<number> {
     try {
       const response = await this.client.wallets.getWallet(walletId)
       
@@ -50,7 +50,7 @@ export class CircleService {
     sourceWalletId: string
     destinationAddress: string
     amount: string
-    tokenType: 'USDC' | 'USDT'
+    tokenType: 'USDC'
     description: string
   }): Promise<{ success: boolean; paymentId?: string; error?: string }> {
     try {
@@ -163,10 +163,9 @@ export class CircleService {
   /**
    * Get token address for Circle API
    */
-  private getTokenAddress(tokenType: 'USDC' | 'USDT'): string {
+  private getTokenAddress(tokenType: 'USDC'): string {
     const tokenAddresses = {
-      USDC: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN',
-      USDT: '0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN'
+      USDC: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN'
     }
     
     return tokenAddresses[tokenType]
@@ -179,7 +178,7 @@ export class CircleService {
     sourceWalletId: string
     destinationAddress: string
     amount: string
-    tokenType: 'USDC' | 'USDT'
+    tokenType: 'USDC'
   }): Promise<{ fees: number; error?: string }> {
     try {
       const tokenAddress = this.getTokenAddress(params.tokenType)
