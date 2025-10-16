@@ -7,7 +7,7 @@ const CIRCLE_ENVIRONMENT = process.env.NODE_ENV === 'production'
   : CircleEnvironments.sandbox
 
 // Initialize Circle SDK
-export const circleClient = new Circle(CIRCLE_API_KEY, CIRCLE_ENVIRONMENTS.sandbox)
+export const circleClient = new Circle(CIRCLE_API_KEY, CIRCLE_ENVIRONMENT)
 
 // Circle API service for stablecoin operations
 export class CircleService {
