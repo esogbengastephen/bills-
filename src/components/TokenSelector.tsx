@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useCurrentAccount } from '@mysten/dapp-kit'
-import { getTokenBalance, getTokenMetadata, SUI_TOKEN_ADDRESSES } from '@/lib/sui'
+import { getTokenBalance, getTokenMetadata, getTokenAddresses } from '@/lib/sui'
 
 interface Token {
   symbol: string
@@ -19,35 +19,41 @@ interface TokenSelectorProps {
   className?: string
 }
 
-const SUPPORTED_TOKENS: Token[] = [
-  {
-    symbol: 'SUI',
-    name: 'Sui',
-    address: SUI_TOKEN_ADDRESSES.SUI,
-    balance: '0.00',
-    icon: '🟡',
-    decimals: 9
-  },
-  {
-    symbol: 'USDC',
-    name: 'USD Coin',
-    address: SUI_TOKEN_ADDRESSES.testnet.USDC,
-    balance: '0.00',
-    icon: '💙',
-    decimals: 6
-  }
-]
+// Get supported tokens dynamically based on current network
+function getSupportedTokens(): Token[] {
+  const tokenAddresses = getTokenAddresses()
+  
+  return [
+    {
+      symbol: 'SUI',
+      name: 'Sui',
+      address: tokenAddresses.SUI,
+      balance: '0.00',
+      icon: '🟡',
+      decimals: 9
+    },
+    {
+      symbol: 'USDC',
+      name: 'USD Coin',
+      address: tokenAddresses.USDC,
+      balance: '0.00',
+      icon: '💙',
+      decimals: 6
+    }
+  ]
+}
 
 export function TokenSelector({ selectedToken, onTokenSelect, className = '' }: TokenSelectorProps) {
   const currentAccount = useCurrentAccount()
-  const [tokens, setTokens] = useState<Token[]>(SUPPORTED_TOKENS)
+  const [tokens, setTokens] = useState<Token[]>(getSupportedTokens())
   const [isOpen, setIsOpen] = useState(false)
 
   const loadTokenBalances = useCallback(async () => {
     if (!currentAccount?.address) return
 
+    const supportedTokens = getSupportedTokens()
     const updatedTokens = await Promise.all(
-      SUPPORTED_TOKENS.map(async (token) => {
+      supportedTokens.map(async (token) => {
         try {
           const balance = await getTokenBalance(currentAccount.address, token.address)
           return {
@@ -135,7 +141,8 @@ export function TokenDisplay({ tokenSymbol, amount, className = '' }: {
   amount: string
   className?: string 
 }) {
-  const token = SUPPORTED_TOKENS.find(t => t.symbol === tokenSymbol)
+  const supportedTokens = getSupportedTokens()
+  const token = supportedTokens.find(t => t.symbol === tokenSymbol)
   
   return (
     <div className={`flex items-center space-x-2 ${className}`}>

@@ -164,11 +164,14 @@ export class CircleService {
    * Get token address for Circle API
    */
   private getTokenAddress(tokenType: 'USDC'): string {
-    const tokenAddresses = {
-      USDC: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN'
-    }
+    // Use the correct USDC address based on network
+    const network = process.env.NEXT_PUBLIC_SUI_NETWORK || 'testnet'
     
-    return tokenAddresses[tokenType]
+    if (network === 'testnet') {
+      return '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC'
+    } else {
+      return '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN'
+    }
   }
 
   /**

@@ -27,7 +27,7 @@ export const SUI_TOKEN_ADDRESSES = {
   
   // Testnet token addresses (using test tokens)
   testnet: {
-    USDC: '0x2::usdc::USDC' // Test USDC on testnet
+    USDC: '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC' // Official USDC on testnet
   },
   
   // Mainnet token addresses
