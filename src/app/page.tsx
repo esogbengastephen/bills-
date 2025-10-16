@@ -7,7 +7,6 @@ interface AuthFormData {
   email: string
   name: string
   referralCode: string
-  password: string
 }
 
 export default function AuthPage() {
@@ -16,8 +15,7 @@ export default function AuthPage() {
   const [formData, setFormData] = useState<AuthFormData>({
     email: '',
     name: '',
-    referralCode: '',
-    password: ''
+    referralCode: ''
   })
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Partial<AuthFormData>>({})
@@ -32,12 +30,6 @@ export default function AuthPage() {
       newErrors.email = 'Please enter a valid email address'
     }
 
-    // Password validation
-    if (!formData.password) {
-      newErrors.password = 'Password is required'
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
-    }
 
     // Name validation (only for signup)
     if (!isLogin) {
@@ -79,7 +71,7 @@ export default function AuthPage() {
     try {
       if (isLogin) {
         // Login logic
-        console.log('Login attempt:', { email: formData.email, password: formData.password })
+        console.log('Login attempt:', { email: formData.email })
         
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000))
@@ -126,7 +118,6 @@ export default function AuthPage() {
           email: formData.email,
           name: formData.name,
           referralCode: formData.referralCode,
-          password: formData.password,
           verificationCode: verificationCode,
           expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
         }))
@@ -147,8 +138,7 @@ export default function AuthPage() {
     setFormData({
       email: '',
       name: '',
-      referralCode: '',
-      password: ''
+      referralCode: ''
     })
     setErrors({})
   }
@@ -208,33 +198,6 @@ export default function AuthPage() {
               )}
             </div>
 
-            {/* Password Input */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="material-icons text-gray-400 text-lg">lock</span>
-                </div>
-                <input
-                  type="password"
-                  id="password"
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                    errors.password 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                  placeholder="Enter your password"
-                  disabled={isLoading}
-                />
-              </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password}</p>
-              )}
-            </div>
 
             {/* Name Input - Only for Signup */}
             {!isLogin && (
