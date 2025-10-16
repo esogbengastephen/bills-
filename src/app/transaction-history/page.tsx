@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
-import { WalletProvider } from '@/components/SuiWalletProvider'
+import { SuiWalletProvider } from '@/components/SuiWalletProvider'
 import { SimpleWalletDisplay } from '@/components/SimpleWallet'
 
 interface Transaction {
@@ -259,7 +259,7 @@ async function TransactionHistoryContent() {
 
 export default function TransactionHistoryPage() {
   return (
-    <WalletProvider>
+    <SuiWalletProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Wallet Display - Centered at top */}
         <div className="bg-white dark:bg-gray-800 shadow-sm">
@@ -271,6 +271,6 @@ export default function TransactionHistoryPage() {
         {/* Main Content */}
         <TransactionHistoryContent />
       </div>
-    </WalletProvider>
+    </SuiWalletProvider>
   )
 }

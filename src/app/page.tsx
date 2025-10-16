@@ -106,6 +106,33 @@ export default function Home() {
               </button>
             </div>
           </div>
+
+          {/* Authentication Link */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mr-3">
+                  <span className="material-icons text-gray-600 dark:text-gray-400">
+                    person_add
+                  </span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                    Create Account
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Join PayBills with referral code
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push('/auth')}
+                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                <span className="material-icons">arrow_forward_ios</span>
+              </button>
+            </div>
+          </div>
         </main>
         </div>
 
