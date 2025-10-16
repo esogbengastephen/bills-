@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Transaction {
+  id                    String   @id @default(cuid())
+  userAddress           String
+  serviceType           String   // 'airtime', 'data', 'electricity', 'tv'
+  tokenType             String   // 'SUI', 'USDC', 'USDT'
+  amount                Float
+  serviceDetails        Json     // Store service-specific details as JSON
+  txDigest              String   @unique
+  pendingPaymentId      String?  // Sui pending payment object ID for escrow
+  clubkonnectOrderId    String?  // ClubKonnect order ID
+  clubkonnectRequestId  String?  // ClubKonnect request ID
+  status                String   // 'success', 'failed', 'pending', 'retried', 'cancelled', 'confirmed', 'refunded'
+  error                 String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@map("transactions")
+}
+
+model UserActivity {
+  id          String   @id @default(cuid())
+  userAddress String
+  action      String   // 'connect_wallet', 'disconnect_wallet', 'view_page', 'purchase_attempt', etc.
+  details     Json?    // Additional context about the action
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@map("user_activities")
+}
+
+model WalletConnection {
+  id          String   @id @default(cuid())
+  userAddress String   @unique
+  firstSeen   DateTime @default(now())
+  lastSeen    DateTime @updatedAt
+  totalTransactions Int @default(0)
+  totalVolume Float   @default(0)
+  isActive    Boolean  @default(true)
+
+  @@map("wallet_connections")
+}
+
+model AdminSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("admin_settings")
+}

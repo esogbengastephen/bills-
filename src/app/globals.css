@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Sui dApp Kit styles are automatically injected by WalletProvider */
+
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    min-height: 100dvh;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .mobile-container {
+    @apply w-full max-w-sm mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .service-card {
+    @apply bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm text-center flex flex-col items-center justify-center aspect-square transition-all duration-200 transform hover:scale-105 active:scale-95 touch-target border border-gray-100 dark:border-gray-700;
+  }
+  
+  .transaction-card {
+    @apply bg-white dark:bg-gray-800 p-3 rounded-lg flex items-center justify-between shadow-sm transition-all duration-200 hover:shadow-md border border-gray-100 dark:border-gray-700;
+  }
+}
