@@ -4,44 +4,13 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ServiceCard from '@/components/ServiceCard'
 import { SimpleWalletDisplay, NetworkIndicator, WalletProvider } from '@/components/SimpleWallet'
-import TransactionCard from '@/components/TransactionCard'
 
-// Mock data
+// Services data
 const services = [
   { icon: 'phone_iphone', title: 'Buy Airtime', id: 'airtime' },
   { icon: 'wifi', title: 'Buy Data', id: 'data' },
   { icon: 'tv', title: 'TV Subscription', id: 'tv' },
   { icon: 'lightbulb', title: 'Electricity Bills', id: 'electricity' },
-]
-
-const transactions = [
-  {
-    id: '1',
-    type: 'airtime' as const,
-    title: 'Airtime Purchase',
-    description: 'MTN - 08012345678',
-    amount: 10.00,
-    date: 'Oct 26',
-    status: 'success' as const,
-  },
-  {
-    id: '2',
-    type: 'electricity' as const,
-    title: 'Electricity Bill',
-    description: 'Meter #123456',
-    amount: -50.00,
-    date: 'Oct 25',
-    status: 'success' as const,
-  },
-  {
-    id: '3',
-    type: 'data' as const,
-    title: 'Data Purchase',
-    description: 'Airtel - 5GB',
-    amount: 5.00,
-    date: 'Oct 24',
-    status: 'success' as const,
-  },
 ]
 
 export default function Home() {
@@ -111,18 +80,30 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Transaction History */}
-          <div>
-            <h2 className="text-lg font-bold mb-3 text-gray-900 dark:text-gray-100">
-              Transaction History
-            </h2>
-            <div className="space-y-2">
-              {transactions.map((transaction) => (
-                <TransactionCard
-                  key={transaction.id}
-                  transaction={transaction}
-                />
-              ))}
+          {/* Transaction History Link */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mr-3">
+                  <span className="material-icons text-gray-600 dark:text-gray-400">
+                    history
+                  </span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                    Transaction History
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    View all your payments
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push('/transaction-history')}
+                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                <span className="material-icons">arrow_forward_ios</span>
+              </button>
             </div>
           </div>
         </main>
