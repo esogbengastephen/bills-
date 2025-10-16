@@ -35,14 +35,6 @@ const SUPPORTED_TOKENS: Token[] = [
     balance: '0.00',
     icon: '💙',
     decimals: 6
-  },
-  {
-    symbol: 'USDT',
-    name: 'Tether USD',
-    address: SUI_TOKEN_ADDRESSES.testnet.USDT,
-    balance: '0.00',
-    icon: '💚',
-    decimals: 6
   }
 ]
 
