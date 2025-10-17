@@ -26,6 +26,5 @@ NEXT_PUBLIC_APP_NAME=SwitcherFi
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_REFERRAL_BONUS_PERCENTAGE=5
 
-# Security
-NEXTAUTH_SECRET=your_nextauth_secret
-NEXTAUTH_URL=http://localhost:3000
+# Email Service Configuration
+RESEND_API_KEY=re_eUQttiz8_LwVcXHM5M89A5qvsqSuWCnQQ

@@ -34,7 +34,7 @@ const sendVerificationEmail = async (email: string, code: string, name: string) 
 
     // Send real email using Resend
     const { data, error } = await resend.emails.send({
-      from: 'PayBills <noreply@paybills.com>', // You'll need to verify this domain
+      from: 'PayBills <onboarding@resend.dev>', // Use Resend's default domain for testing
       to: [email],
       subject: 'Verify your PayBills account',
       html: `
