@@ -175,6 +175,22 @@ export default function VerifyEmailPage() {
           </p>
         </div>
 
+        {/* Verification Code Display for Testing */}
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <span className="material-icons text-yellow-600 dark:text-yellow-400 mr-2">info</span>
+            <div>
+              <h4 className="font-medium text-yellow-800 dark:text-yellow-200">Testing Mode</h4>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                Your verification code is: <span className="font-mono font-bold text-lg">{pendingData.verificationCode}</span>
+              </p>
+              <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                In production, this code would be sent to your email.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Verification Form */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
