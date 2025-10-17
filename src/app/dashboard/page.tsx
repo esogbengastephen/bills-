@@ -27,6 +27,43 @@ export default function Dashboard() {
         const userData = JSON.parse(user)
         if (userData.authenticated) {
           setIsAuthenticated(true)
+          
+          // Send referral code email on first dashboard visit
+          if (userData.userReferralCode && !userData.referralEmailSent) {
+            console.log('Sending referral code email from dashboard...', {
+              email: userData.email,
+              name: userData.name,
+              referralCode: userData.userReferralCode
+            })
+            
+            fetch('/api/auth/send-referral', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: userData.email,
+                name: userData.name,
+                referralCode: userData.userReferralCode
+              })
+            })
+            .then(response => response.json())
+            .then(result => {
+              console.log('Referral email response:', result)
+              if (result.success) {
+                // Mark referral email as sent
+                const updatedUserData = {
+                  ...userData,
+                  referralEmailSent: true
+                }
+                localStorage.setItem('user', JSON.stringify(updatedUserData))
+              }
+            })
+            .catch(error => {
+              console.error('Failed to send referral code email:', error)
+              // Don't block the dashboard if referral email fails
+            })
+          }
         } else {
           router.push('/')
         }
