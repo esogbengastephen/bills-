@@ -89,18 +89,23 @@ const sendReferralCodeEmail = async (email: string, name: string, referralCode: 
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Referral email API called')
     const { email, name, referralCode } = await request.json()
+    console.log('Request data:', { email, name, referralCode })
 
     // Validate input
     if (!email || !name || !referralCode) {
+      console.log('Validation failed:', { email: !!email, name: !!name, referralCode: !!referralCode })
       return NextResponse.json(
         { error: 'Email, name, and referral code are required' },
         { status: 400 }
       )
     }
 
+    console.log('Sending referral code email...')
     // Send referral code email
     const emailResult = await sendReferralCodeEmail(email, name, referralCode)
+    console.log('Email result:', emailResult)
 
     if (!emailResult.success) {
       return NextResponse.json(

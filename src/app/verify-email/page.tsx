@@ -85,7 +85,13 @@ export default function VerifyEmailPage() {
 
         // Send referral code email
         try {
-          await fetch('/api/auth/send-referral', {
+          console.log('Sending referral code email...', {
+            email: pendingData.email,
+            name: pendingData.name,
+            referralCode: pendingData.userReferralCode
+          })
+          
+          const referralResponse = await fetch('/api/auth/send-referral', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -96,6 +102,10 @@ export default function VerifyEmailPage() {
               referralCode: pendingData.userReferralCode
             })
           })
+          
+          const referralResult = await referralResponse.json()
+          console.log('Referral email response:', referralResult)
+          
         } catch (error) {
           console.error('Failed to send referral code email:', error)
           // Don't block the flow if referral email fails
