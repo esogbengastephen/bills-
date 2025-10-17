@@ -7,6 +7,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Create transactions table
 CREATE TABLE IF NOT EXISTS transactions (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     user_address TEXT NOT NULL,
     service_type TEXT NOT NULL,
     token_type TEXT NOT NULL,
@@ -64,6 +65,7 @@ CREATE TABLE IF NOT EXISTS admin_settings (
 );
 
 -- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_user_address ON transactions(user_address);
 CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);
@@ -132,15 +134,27 @@ CREATE POLICY "Users can update their own data" ON users
 
 -- Allow users to read their own transactions
 CREATE POLICY "Users can view their own transactions" ON transactions
-    FOR SELECT USING (auth.jwt() ->> 'sub' = user_address);
+    FOR SELECT USING (
+        user_id IN (
+            SELECT id FROM users WHERE email = auth.jwt() ->> 'email'
+        )
+    );
 
 -- Allow users to insert their own transactions
 CREATE POLICY "Users can insert their own transactions" ON transactions
-    FOR INSERT WITH CHECK (auth.jwt() ->> 'sub' = user_address);
+    FOR INSERT WITH CHECK (
+        user_id IN (
+            SELECT id FROM users WHERE email = auth.jwt() ->> 'email'
+        )
+    );
 
 -- Allow users to update their own transactions
 CREATE POLICY "Users can update their own transactions" ON transactions
-    FOR UPDATE USING (auth.jwt() ->> 'sub' = user_address);
+    FOR UPDATE USING (
+        user_id IN (
+            SELECT id FROM users WHERE email = auth.jwt() ->> 'email'
+        )
+    );
 
 -- Similar policies for user_activities
 CREATE POLICY "Users can view their own activities" ON user_activities

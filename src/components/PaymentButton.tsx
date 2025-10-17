@@ -75,38 +75,77 @@ export function PaymentButton({
           onSuccess: async (result: any) => {
             console.log('✅ Payment transaction successful:', result)
             
-            // Call the treasury API to credit the user
+            // Get user email from localStorage
+            const userEmail = localStorage.getItem('userEmail')
+            
+            if (!userEmail) {
+              console.warn('No user email found in localStorage')
+              onSuccess?.(result.digest)
+              return
+            }
+
+            // Create transaction record in Supabase
             try {
-              const response = await fetch('/api/treasury', {
+              const response = await fetch('/api/transactions', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                  userEmail,
                   userAddress: currentAccount.address,
-                  amount,
-                  tokenType,
-                  userId: currentAccount.address, // Using address as userId for now
                   serviceType,
+                  tokenType,
+                  amount: parseFloat(amount),
                   serviceDetails,
-                  txDigest: result.digest
+                  txDigest: result.digest,
+                  status: 'success'
                 })
               })
 
               const data = await response.json()
               
               if (data.success) {
+                console.log('✅ Transaction recorded successfully:', data.transaction)
                 onSuccess?.(result.digest)
               } else {
-                onError?.(data.error || 'Failed to credit account')
+                console.error('Failed to record transaction:', data.error)
+                onSuccess?.(result.digest) // Still call success since payment went through
               }
             } catch (apiError) {
-              console.error('Error calling treasury API:', apiError)
-              onError?.('Payment successful but failed to credit account')
+              console.error('Error recording transaction:', apiError)
+              onSuccess?.(result.digest) // Still call success since payment went through
             }
           },
-          onError: (error: any) => {
+          onError: async (error: any) => {
             console.error('❌ Payment transaction failed:', error)
+            
+            // Record failed transaction if we have user email
+            const userEmail = localStorage.getItem('userEmail')
+            if (userEmail) {
+              try {
+                await fetch('/api/transactions', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    userEmail,
+                    userAddress: currentAccount.address,
+                    serviceType,
+                    tokenType,
+                    amount: parseFloat(amount),
+                    serviceDetails,
+                    txDigest: `failed_${Date.now()}`, // Generate a unique ID for failed transactions
+                    status: 'failed',
+                    error: error.message || 'Transaction failed'
+                  })
+                })
+              } catch (apiError) {
+                console.error('Error recording failed transaction:', apiError)
+              }
+            }
+            
             onError?.(error.message || 'Transaction failed')
           }
         }
