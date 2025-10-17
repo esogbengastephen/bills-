@@ -19,6 +19,8 @@ export default function AuthPage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Partial<AuthFormData>>({})
+  const [generalError, setGeneralError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   const validateForm = (): boolean => {
     const newErrors: Partial<AuthFormData> = {}
@@ -57,6 +59,13 @@ export default function AuthPage() {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
     }
+    // Clear general error and success message when user starts typing
+    if (generalError) {
+      setGeneralError(null)
+    }
+    if (successMessage) {
+      setSuccessMessage(null)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,6 +76,8 @@ export default function AuthPage() {
     }
 
     setIsLoading(true)
+    setGeneralError(null) // Clear any previous errors
+    setSuccessMessage(null) // Clear any previous success messages
     
     try {
       if (isLogin) {
@@ -103,6 +114,13 @@ export default function AuthPage() {
           })
         })
 
+        if (!validationResponse.ok) {
+          if (validationResponse.status === 500) {
+            throw new Error('Server configuration error. Please try again later or contact support.')
+          }
+          throw new Error('Network error. Please check your connection and try again.')
+        }
+
         const validationResult = await validationResponse.json()
 
         if (validationResult.exists) {
@@ -126,6 +144,13 @@ export default function AuthPage() {
           })
         })
 
+        if (!emailResponse.ok) {
+          if (emailResponse.status === 500) {
+            throw new Error('Email service error. Please try again later or contact support.')
+          }
+          throw new Error('Network error. Please check your connection and try again.')
+        }
+
         const emailResult = await emailResponse.json()
 
         if (!emailResult.success) {
@@ -146,13 +171,19 @@ export default function AuthPage() {
           expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
         }))
         
-        // Redirect to verification page
-        router.push('/verify-email')
+        // Show success message before redirect
+        setSuccessMessage('Verification email sent! Redirecting to verification page...')
+        
+        // Redirect to verification page after a short delay
+        setTimeout(() => {
+          router.push('/verify-email')
+        }, 1500)
       }
       
     } catch (error) {
       console.error('Authentication error:', error)
-      // Handle error (show error message, etc.)
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.'
+      setGeneralError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -165,6 +196,8 @@ export default function AuthPage() {
       referralCode: ''
     })
     setErrors({})
+    setGeneralError(null)
+    setSuccessMessage(null)
   }
 
   const toggleMode = () => {
@@ -193,6 +226,49 @@ export default function AuthPage() {
 
         {/* Authentication Form */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          {/* General Error Display */}
+          {generalError && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div className="flex items-start">
+                <span className="material-icons text-red-600 dark:text-red-400 mr-2 mt-0.5">error</span>
+                <div>
+                  <h3 className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">
+                    Authentication Error
+                  </h3>
+                  <p className="text-sm text-red-700 dark:text-red-300">
+                    {generalError}
+                  </p>
+                  <div className="mt-2 text-xs text-red-600 dark:text-red-400">
+                    <strong>Possible solutions:</strong>
+                    <ul className="list-disc list-inside mt-1">
+                      <li>Check your internet connection</li>
+                      <li>Verify your email and referral code</li>
+                      <li>Try refreshing the page</li>
+                      <li>Contact support if the problem persists</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Success Message Display */}
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div className="flex items-start">
+                <span className="material-icons text-green-600 dark:text-green-400 mr-2 mt-0.5">check_circle</span>
+                <div>
+                  <h3 className="text-sm font-medium text-green-800 dark:text-green-200 mb-1">
+                    Success!
+                  </h3>
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    {successMessage}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Input */}
             <div>

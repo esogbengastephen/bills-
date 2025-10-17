@@ -1,8 +1,8 @@
 # SwitcherFi Environment Variables
 
 # Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_URL=https://xukkixmnbnevhmbpwnzn.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1a2tpeG1uYm5ldmhtYnB3bnpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MzQ0MTMsImV4cCI6MjA3NjIxMDQxM30.hyb5SiRdG_wJ6DWGSMxiPCcMvbPGyxAHdRBNx6-w1fk
 
 # VTpass API Configuration
 VTPASS_API_URL=https://sandbox.vtpass.com/api
