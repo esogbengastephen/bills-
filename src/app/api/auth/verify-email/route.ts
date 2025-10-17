@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { generateReferralCode } from '@/lib/referral'
 
 // Initialize Resend (only if API key is provided)
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 // Mock email service - in production, use a real email service like SendGrid, Resend, etc.
-const sendVerificationEmail = async (email: string, code: string, name: string) => {
+const sendVerificationEmail = async (email: string, code: string, name: string, referralCode: string) => {
   try {
     // If Resend API key is not configured, fall back to console logging
     if (!resend) {
@@ -20,6 +21,9 @@ const sendVerificationEmail = async (email: string, code: string, name: string) 
         Welcome to PayBills! Please verify your email address by entering the following code:
         
         Verification Code: ${code}
+        
+        Your unique referral code: ${referralCode}
+        Share this code with friends to earn rewards!
         
         This code will expire in 10 minutes.
         
@@ -45,7 +49,18 @@ const sendVerificationEmail = async (email: string, code: string, name: string) 
           <div style="background-color: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0;">
             <h1 style="color: #2563eb; font-size: 32px; margin: 0; letter-spacing: 4px;">${code}</h1>
           </div>
-          <p>This code will expire in 10 minutes.</p>
+          
+          <div style="background-color: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 8px; padding: 20px; margin: 20px 0;">
+            <h3 style="color: #0c4a6e; margin: 0 0 10px 0;">🎉 Your Referral Code</h3>
+            <div style="background-color: white; padding: 15px; border-radius: 6px; text-align: center;">
+              <span style="font-size: 24px; font-weight: bold; color: #0ea5e9; letter-spacing: 2px;">${referralCode}</span>
+            </div>
+            <p style="color: #0c4a6e; margin: 10px 0 0 0; font-size: 14px;">
+              Share this code with friends to earn rewards when they sign up!
+            </p>
+          </div>
+          
+          <p>This verification code will expire in 10 minutes.</p>
           <p>If you didn't create an account with PayBills, please ignore this email.</p>
           <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
           <p style="color: #6b7280; font-size: 14px;">Best regards,<br>The PayBills Team</p>
@@ -82,8 +97,11 @@ export async function POST(request: NextRequest) {
     // Generate verification code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString()
     
+    // Generate unique referral code for the new user
+    const userReferralCode = generateReferralCode()
+    
     // Send verification email
-    const emailResult = await sendVerificationEmail(email, verificationCode, name)
+    const emailResult = await sendVerificationEmail(email, verificationCode, name, userReferralCode)
 
     if (!emailResult.success) {
       return NextResponse.json(
@@ -96,6 +114,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Verification email sent successfully',
+      userReferralCode: userReferralCode,
       // In development, include the code for testing
       ...(process.env.NODE_ENV === 'development' && { verificationCode })
     })

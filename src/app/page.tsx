@@ -112,12 +112,14 @@ export default function AuthPage() {
 
         // Generate verification code (in production, this would come from the server)
         const verificationCode = emailResult.verificationCode || '123456'
+        const userReferralCode = emailResult.userReferralCode || 'ABC12345'
         
         // Store pending verification data
         localStorage.setItem('pendingVerification', JSON.stringify({
           email: formData.email,
           name: formData.name,
           referralCode: formData.referralCode,
+          userReferralCode: userReferralCode,
           verificationCode: verificationCode,
           expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
         }))

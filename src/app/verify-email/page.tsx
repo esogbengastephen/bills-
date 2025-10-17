@@ -78,6 +78,7 @@ export default function VerifyEmailPage() {
           email: pendingData.email,
           name: pendingData.name,
           referralCode: pendingData.referralCode,
+          userReferralCode: pendingData.userReferralCode,
           authenticated: true,
           authenticatedAt: new Date().toISOString()
         }))
@@ -183,6 +184,9 @@ export default function VerifyEmailPage() {
               <h4 className="font-medium text-yellow-800 dark:text-yellow-200">Testing Mode</h4>
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
                 Your verification code is: <span className="font-mono font-bold text-lg">{pendingData.verificationCode}</span>
+              </p>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-2">
+                Your referral code is: <span className="font-mono font-bold text-lg">{pendingData.userReferralCode}</span>
               </p>
               <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
                 In production, this code would be sent to your email.
