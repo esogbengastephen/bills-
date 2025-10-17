@@ -88,9 +88,31 @@ export default function AuthPage() {
         router.push('/dashboard')
         
       } else {
-        // Signup logic - send verification email
+        // Signup logic - validate first, then send verification email
         console.log('Signup attempt:', formData)
         
+        // First validate email and referral code
+        const validationResponse = await fetch('/api/auth/validate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            referralCode: formData.referralCode
+          })
+        })
+
+        const validationResult = await validationResponse.json()
+
+        if (validationResult.exists) {
+          throw new Error('Email already exists. Please sign in instead.')
+        }
+
+        if (!validationResult.validReferral && formData.referralCode) {
+          throw new Error('Invalid referral code. Please check and try again.')
+        }
+
         // Send verification email
         const emailResponse = await fetch('/api/auth/verify-email', {
           method: 'POST',

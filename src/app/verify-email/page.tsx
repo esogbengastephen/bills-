@@ -73,14 +73,34 @@ export default function VerifyEmailPage() {
 
       // Check if code matches (in real app, verify with server)
       if (verificationCode === pendingData.verificationCode) {
-        // Store user data
+        // Create user account in database
+        const signupResponse = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: pendingData.email,
+            name: pendingData.name,
+            referralCode: pendingData.referralCode
+          })
+        })
+
+        const signupResult = await signupResponse.json()
+
+        if (!signupResult.success) {
+          throw new Error(signupResult.error || 'Failed to create user account')
+        }
+
+        // Store user data locally
         localStorage.setItem('user', JSON.stringify({
           email: pendingData.email,
           name: pendingData.name,
           referralCode: pendingData.referralCode,
           userReferralCode: pendingData.userReferralCode,
           authenticated: true,
-          authenticatedAt: new Date().toISOString()
+          authenticatedAt: new Date().toISOString(),
+          userId: signupResult.user.id
         }))
 
         // Referral email will be sent from dashboard

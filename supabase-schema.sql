@@ -22,6 +22,18 @@ CREATE TABLE IF NOT EXISTS transactions (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create users table
+CREATE TABLE IF NOT EXISTS users (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    referral_code VARCHAR(50) UNIQUE NOT NULL,
+    referred_by VARCHAR(50),
+    wallet_addresses TEXT[], -- Array of wallet addresses
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create user_activities table
 CREATE TABLE IF NOT EXISTS user_activities (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -56,6 +68,10 @@ CREATE INDEX IF NOT EXISTS idx_transactions_user_address ON transactions(user_ad
 CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);
 CREATE INDEX IF NOT EXISTS idx_transactions_tx_digest ON transactions(tx_digest);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code);
+CREATE INDEX IF NOT EXISTS idx_users_referred_by ON users(referred_by);
 
 CREATE INDEX IF NOT EXISTS idx_user_activities_user_address ON user_activities(user_address);
 CREATE INDEX IF NOT EXISTS idx_user_activities_activity_type ON user_activities(activity_type);
@@ -96,11 +112,24 @@ ON CONFLICT (setting_key) DO NOTHING;
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wallet_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
+-- Allow users to read their own data
+CREATE POLICY "Users can view their own data" ON users
+    FOR SELECT USING (auth.jwt() ->> 'email' = email);
+
+-- Allow users to insert their own data
+CREATE POLICY "Users can insert their own data" ON users
+    FOR INSERT WITH CHECK (true); -- Allow signup
+
+-- Allow users to update their own data
+CREATE POLICY "Users can update their own data" ON users
+    FOR UPDATE USING (auth.jwt() ->> 'email' = email);
+
 -- Allow users to read their own transactions
 CREATE POLICY "Users can view their own transactions" ON transactions
     FOR SELECT USING (auth.jwt() ->> 'sub' = user_address);
