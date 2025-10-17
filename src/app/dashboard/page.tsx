@@ -29,6 +29,10 @@ export default function Dashboard() {
           setIsAuthenticated(true)
           
           // Send referral code email on first dashboard visit
+          console.log('Dashboard user data:', userData)
+          console.log('Has userReferralCode:', !!userData.userReferralCode)
+          console.log('Referral email sent:', !!userData.referralEmailSent)
+          
           if (userData.userReferralCode && !userData.referralEmailSent) {
             console.log('Sending referral code email from dashboard...', {
               email: userData.email,
