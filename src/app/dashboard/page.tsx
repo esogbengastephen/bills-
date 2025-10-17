@@ -61,6 +61,12 @@ export default function Dashboard() {
                   referralEmailSent: true
                 }
                 localStorage.setItem('user', JSON.stringify(updatedUserData))
+                
+                // Show success message
+                alert(`🎉 Referral code sent! Check your email for: ${userData.userReferralCode}`)
+              } else {
+                // Show fallback message with referral code
+                alert(`📧 Email failed, but here's your referral code: ${userData.userReferralCode}`)
               }
             })
             .catch(error => {
