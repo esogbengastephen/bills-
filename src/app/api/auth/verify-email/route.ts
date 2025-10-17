@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Initialize Resend (only if API key is provided)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 // Mock email service - in production, use a real email service like SendGrid, Resend, etc.
 const sendVerificationEmail = async (email: string, code: string, name: string) => {
   try {
     // If Resend API key is not configured, fall back to console logging
-    if (!process.env.RESEND_API_KEY) {
+    if (!resend) {
       console.log(`Sending verification email to ${email}`)
       console.log(`Verification code: ${code}`)
       console.log(`Email content:`)

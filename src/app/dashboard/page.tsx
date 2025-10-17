@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import ServiceCard from '@/components/ServiceCard'
-import { SimpleWalletDisplay, NetworkIndicator, SuiWalletProvider } from '@/components/SimpleWallet'
+import { SimpleWalletDisplay, NetworkIndicator } from '@/components/SimpleWallet'
+import { SuiWalletProvider } from '@/components/SuiWalletProvider'
 
 // Services data
 const services = [
