@@ -90,6 +90,8 @@ const sendReferralCodeEmail = async (email: string, name: string, referralCode: 
 export async function POST(request: NextRequest) {
   try {
     console.log('Referral email API called')
+    console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY)
+    
     const { email, name, referralCode } = await request.json()
     console.log('Request data:', { email, name, referralCode })
 
@@ -108,8 +110,9 @@ export async function POST(request: NextRequest) {
     console.log('Email result:', emailResult)
 
     if (!emailResult.success) {
+      console.error('Email sending failed:', emailResult.error)
       return NextResponse.json(
-        { error: 'Failed to send referral code email' },
+        { error: 'Failed to send referral code email', details: emailResult.error },
         { status: 500 }
       )
     }
