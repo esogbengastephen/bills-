@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface AuthFormData {
@@ -22,6 +22,22 @@ export default function AuthPage() {
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
+  // Check if user is already authenticated
+  useEffect(() => {
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      try {
+        const user = JSON.parse(userData)
+        if (user.authenticated) {
+          router.push('/dashboard')
+        }
+      } catch (error) {
+        // Invalid data, clear it
+        localStorage.removeItem('user')
+      }
+    }
+  }, [router])
+
   const validateForm = (): boolean => {
     const newErrors: Partial<AuthFormData> = {}
 
@@ -41,10 +57,8 @@ export default function AuthPage() {
         newErrors.name = 'Name must be at least 2 characters'
       }
 
-      // Referral code validation (only for signup)
-      if (!formData.referralCode) {
-        newErrors.referralCode = 'Referral code is required'
-      } else if (formData.referralCode.length < 6) {
+      // Referral code validation (optional for signup)
+      if (formData.referralCode && formData.referralCode.length < 6) {
         newErrors.referralCode = 'Referral code must be at least 6 characters'
       }
     }
@@ -76,62 +90,75 @@ export default function AuthPage() {
     }
 
     setIsLoading(true)
-    setGeneralError(null) // Clear any previous errors
-    setSuccessMessage(null) // Clear any previous success messages
+    setGeneralError(null)
+    setSuccessMessage(null)
     
     try {
-      if (isLogin) {
-        // Login logic
-        console.log('Login attempt:', { email: formData.email })
-        
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        // Store user data
-        localStorage.setItem('user', JSON.stringify({
+      // Check if email exists in database
+      const validationResponse = await fetch('/api/auth/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email: formData.email,
-          name: 'User', // In real app, get from API response
-          authenticated: true,
-          authenticatedAt: new Date().toISOString()
-        }))
-        
-        // Redirect to dashboard
-        router.push('/dashboard')
-        
-      } else {
-        // Signup logic - validate first, then send verification email
-        console.log('Signup attempt:', formData)
-        
-        // First validate email and referral code
-        const validationResponse = await fetch('/api/auth/validate', {
+          referralCode: formData.referralCode || null
+        })
+      })
+
+      if (!validationResponse.ok) {
+        if (validationResponse.status === 500) {
+          throw new Error('Server configuration error. Please try again later or contact support.')
+        }
+        throw new Error('Network error. Please check your connection and try again.')
+      }
+
+      const validationResult = await validationResponse.json()
+
+      if (validationResult.exists) {
+        // Email exists - send verification code and redirect to dashboard
+        const emailResponse = await fetch('/api/auth/verify-email', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             email: formData.email,
-            referralCode: formData.referralCode
+            name: validationResult.user.name,
+            referralCode: null // Existing user, no referral code needed
           })
         })
 
-        if (!validationResponse.ok) {
-          if (validationResponse.status === 500) {
-            throw new Error('Server configuration error. Please try again later or contact support.')
-          }
-          throw new Error('Network error. Please check your connection and try again.')
+        if (!emailResponse.ok) {
+          throw new Error('Failed to send verification email')
         }
 
-        const validationResult = await validationResponse.json()
-
-        if (validationResult.exists) {
-          throw new Error('Email already exists. Please sign in instead.')
-        }
-
-        if (!validationResult.validReferral && formData.referralCode) {
+        const emailResult = await emailResponse.json()
+        const verificationCode = emailResult.verificationCode || '123456'
+        
+        // Store pending verification data
+        localStorage.setItem('pendingVerification', JSON.stringify({
+          email: formData.email,
+          name: validationResult.user.name,
+          referralCode: null,
+          userReferralCode: validationResult.user.referralCode,
+          verificationCode: verificationCode,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
+        }))
+        
+        setSuccessMessage('Verification email sent! Redirecting to verification page...')
+        
+        setTimeout(() => {
+          router.push('/verify-email')
+        }, 1500)
+        
+      } else {
+        // Email doesn't exist - check referral code and proceed with signup
+        if (formData.referralCode && !validationResult.validReferral) {
           throw new Error('Invalid referral code. Please check and try again.')
         }
 
-        // Send verification email
+        // Send verification email for new signup
         const emailResponse = await fetch('/api/auth/verify-email', {
           method: 'POST',
           headers: {
@@ -145,19 +172,10 @@ export default function AuthPage() {
         })
 
         if (!emailResponse.ok) {
-          if (emailResponse.status === 500) {
-            throw new Error('Email service error. Please try again later or contact support.')
-          }
-          throw new Error('Network error. Please check your connection and try again.')
+          throw new Error('Failed to send verification email')
         }
 
         const emailResult = await emailResponse.json()
-
-        if (!emailResult.success) {
-          throw new Error(emailResult.error || 'Failed to send verification email')
-        }
-
-        // Generate verification code (in production, this would come from the server)
         const verificationCode = emailResult.verificationCode || '123456'
         const userReferralCode = emailResult.userReferralCode || 'ABC12345'
         
@@ -171,10 +189,8 @@ export default function AuthPage() {
           expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
         }))
         
-        // Show success message before redirect
         setSuccessMessage('Verification email sent! Redirecting to verification page...')
         
-        // Redirect to verification page after a short delay
         setTimeout(() => {
           router.push('/verify-email')
         }, 1500)
@@ -220,7 +236,7 @@ export default function AuthPage() {
             {isLogin ? 'Welcome Back' : 'Welcome to PayBills'}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            {isLogin ? 'Sign in to your account' : 'Create your account to start making payments'}
+            {isLogin ? 'Enter your email to continue' : 'Enter your email to get started'}
           </p>
         </div>
 
@@ -298,7 +314,6 @@ export default function AuthPage() {
               )}
             </div>
 
-
             {/* Name Input - Only for Signup */}
             {!isLogin && (
               <div>
@@ -357,7 +372,7 @@ export default function AuthPage() {
                   <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.referralCode}</p>
                 )}
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Don't have a referral code? Contact support for assistance.
+                  Referral code is optional. Leave blank if you don't have one.
                 </p>
               </div>
             )}
@@ -371,12 +386,12 @@ export default function AuthPage() {
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  {isLogin ? 'Signing In...' : 'Creating Account...'}
+                  Processing...
                 </>
               ) : (
                 <>
                   <span className="material-icons mr-2">check</span>
-                  {isLogin ? 'Sign In' : 'Create Account'}
+                  Continue
                 </>
               )}
             </button>
