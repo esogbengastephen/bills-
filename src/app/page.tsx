@@ -116,41 +116,23 @@ export default function AuthPage() {
       const validationResult = await validationResponse.json()
 
       if (validationResult.exists) {
-        // Email exists - send verification code and redirect to dashboard
-        const emailResponse = await fetch('/api/auth/verify-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            name: validationResult.user.name,
-            referralCode: null // Existing user, no referral code needed
-          })
-        })
-
-        if (!emailResponse.ok) {
-          throw new Error('Failed to send verification email')
-        }
-
-        const emailResult = await emailResponse.json()
-        const verificationCode = emailResult.verificationCode || '123456'
-        
-        // Store pending verification data
-        localStorage.setItem('pendingVerification', JSON.stringify({
+        // Email exists - redirect directly to dashboard
+        const userData = {
           email: formData.email,
           name: validationResult.user.name,
-          referralCode: null,
-          userReferralCode: validationResult.user.referralCode,
-          verificationCode: verificationCode,
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
-        }))
+          referralCode: validationResult.user.referralCode,
+          authenticated: true,
+          authenticatedAt: new Date().toISOString()
+        }
         
-        setSuccessMessage('Verification email sent! Redirecting to verification page...')
+        // Store user data
+        localStorage.setItem('user', JSON.stringify(userData))
+        
+        setSuccessMessage('Welcome back! Redirecting to dashboard...')
         
         setTimeout(() => {
-          router.push('/verify-email')
-        }, 1500)
+          router.push('/dashboard')
+        }, 1000)
         
       } else {
         // Email doesn't exist - check referral code and proceed with signup
