@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import ServiceCard from '@/components/ServiceCard'
-import { SimpleWalletDisplay, NetworkIndicator } from '@/components/SimpleWallet'
+import { GlobalWalletDisplay } from '@/components/GlobalWalletDisplay'
+import { NetworkIndicator } from '@/components/SimpleWallet'
 import { SuiWalletProvider } from '@/components/SuiWalletProvider'
 import { ThemeToggle } from '@/components/ThemeToggle'
 
@@ -32,27 +33,6 @@ export default function Dashboard() {
           setIsAuthenticated(true)
           setUserData(userData)
           
-          // Store wallet address if user has one
-          if (userData.walletAddress && userData.email) {
-            fetch('/api/auth/wallet', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                email: userData.email,
-                walletAddress: userData.walletAddress
-              })
-            })
-            .then(response => response.json())
-            .then(result => {
-              console.log('Wallet address stored:', result)
-            })
-            .catch(error => {
-              console.error('Failed to store wallet address:', error)
-            })
-          }
-
           // Send referral code email on first dashboard visit
           console.log('Dashboard user data:', userData)
           console.log('Has userReferralCode:', !!userData.userReferralCode)
@@ -186,7 +166,7 @@ export default function Dashboard() {
 
           {/* Wallet Display - Centered */}
           <div className="flex justify-center mb-6">
-            <SimpleWalletDisplay />
+            <GlobalWalletDisplay />
           </div>
 
         <header className="mb-6">

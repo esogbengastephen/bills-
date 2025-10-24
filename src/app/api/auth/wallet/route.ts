@@ -6,9 +6,9 @@ export async function POST(request: NextRequest) {
   try {
     const { email, walletAddress } = await request.json()
 
-    if (!email || !walletAddress) {
+    if (!email) {
       return NextResponse.json(
-        { error: 'Email and wallet address are required' },
+        { error: 'Email is required' },
         { status: 400 }
       )
     }
@@ -31,36 +31,59 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Add wallet address if not already present
     const currentAddresses = user.wallet_addresses || []
-    if (!currentAddresses.includes(walletAddress)) {
-      const updatedAddresses = [...currentAddresses, walletAddress]
 
+    if (walletAddress) {
+      // Connect wallet - add address if not already present
+      if (!currentAddresses.includes(walletAddress)) {
+        const updatedAddresses = [...currentAddresses, walletAddress]
+
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ wallet_addresses: updatedAddresses })
+          .eq('email', email)
+
+        if (updateError) {
+          console.error('Error updating wallet addresses:', updateError)
+          return NextResponse.json(
+            { error: 'Failed to update wallet addresses' },
+            { status: 500 }
+          )
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: 'Wallet address added successfully',
+          walletAddresses: updatedAddresses
+        })
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Wallet address already exists',
+        walletAddresses: currentAddresses
+      })
+    } else {
+      // Disconnect wallet - clear all addresses
       const { error: updateError } = await supabase
         .from('users')
-        .update({ wallet_addresses: updatedAddresses })
+        .update({ wallet_addresses: [] })
         .eq('email', email)
 
       if (updateError) {
-        console.error('Error updating wallet addresses:', updateError)
+        console.error('Error clearing wallet addresses:', updateError)
         return NextResponse.json(
-          { error: 'Failed to update wallet addresses' },
+          { error: 'Failed to clear wallet addresses' },
           { status: 500 }
         )
       }
 
       return NextResponse.json({
         success: true,
-        message: 'Wallet address added successfully',
-        walletAddresses: updatedAddresses
+        message: 'Wallet addresses cleared successfully',
+        walletAddresses: []
       })
     }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Wallet address already exists',
-      walletAddresses: currentAddresses
-    })
 
   } catch (error) {
     console.error('Wallet update error:', error)

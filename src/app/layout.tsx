@@ -5,6 +5,7 @@ import '@mysten/dapp-kit/dist/index.css'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { SuiWalletProvider } from '@/components/SuiWalletProvider'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { WalletProvider } from '@/components/WalletProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -35,11 +36,13 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ThemeProvider>
-          <ErrorBoundary>
-            <SuiWalletProvider>
-              {children}
-            </SuiWalletProvider>
-          </ErrorBoundary>
+          <WalletProvider>
+            <ErrorBoundary>
+              <SuiWalletProvider>
+                {children}
+              </SuiWalletProvider>
+            </ErrorBoundary>
+          </WalletProvider>
         </ThemeProvider>
       </body>
     </html>

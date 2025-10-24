@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { TokenSelector } from '@/components/TokenSelector'
-import { SimpleWalletDisplay, NetworkIndicator, WalletProvider } from '@/components/SimpleWallet'
+import { GlobalWalletDisplay } from '@/components/GlobalWalletDisplay'
+import { NetworkIndicator } from '@/components/SimpleWallet'
 import { PaymentButton as SmartPaymentButton } from '@/components/SmartPaymentButton'
 import { PaymentStatus } from '@/components/PaymentButton'
 import { PriceConverter, PriceDisplay, ExchangeRateTicker } from '@/components/PriceConverter'
+import { useWallet } from '@/components/WalletProvider'
 
 interface AirtimePlan {
   variation_code: string
@@ -32,6 +34,7 @@ const quickAmounts = [100, 200, 500, 1000, 2000, 5000]
 
 export default function AirtimePurchase() {
   const router = useRouter()
+  const { walletAddress, isConnected } = useWallet()
   const [selectedToken, setSelectedToken] = useState('SUI')
   const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(null)
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -138,13 +141,12 @@ export default function AirtimePurchase() {
   }
 
   return (
-    <WalletProvider>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="mobile-container py-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="mobile-container py-6">
         {/* Header */}
         {/* Wallet Display - Centered at top */}
         <div className="flex justify-center mb-6">
-          <SimpleWalletDisplay />
+          <GlobalWalletDisplay />
         </div>
 
         <header className="mb-8">
@@ -338,6 +340,6 @@ export default function AirtimePurchase() {
         rel="stylesheet"
       />
     </div>
-    </WalletProvider>
+    </div>
   )
 }

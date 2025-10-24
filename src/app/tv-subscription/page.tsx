@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { TokenSelector } from '@/components/TokenSelector'
 import { SUI_TOKENS, DEFAULT_TOKEN } from '@/lib/tokens'
-import { SimpleWalletDisplay, NetworkIndicator, WalletProvider } from '@/components/SimpleWallet'
+import { GlobalWalletDisplay } from '@/components/SimpleWallet'
+import { useWallet } from '@/components/WalletProvider'
 import { PaymentButton as SmartPaymentButton } from '@/components/SmartPaymentButton'
 import { PaymentStatus } from '@/components/PaymentButton'
 import { PriceConverter, ExchangeRateTicker } from '@/components/PriceConverter'
@@ -184,13 +185,13 @@ export default function TVSubscription() {
   }, [selectedPlan])
 
   return (
-    <WalletProvider>
+    
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="mobile-container py-6">
         {/* Header */}
         {/* Wallet Display - Centered at top */}
         <div className="flex justify-center mb-6">
-          <SimpleWalletDisplay />
+          <GlobalWalletDisplay />
         </div>
 
         <header className="flex justify-between items-center mb-8">
@@ -395,6 +396,6 @@ export default function TVSubscription() {
         rel="stylesheet"
       />
     </div>
-    </WalletProvider>
+    
   )
 }
