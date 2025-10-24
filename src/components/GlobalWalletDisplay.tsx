@@ -1,39 +1,22 @@
 'use client'
 
 import { useWallet } from './WalletProvider'
-import { useWalletKit } from '@mysten/dapp-kit'
-import { useState } from 'react'
+import { ConnectButton, useCurrentAccount } from '@mysten/dapp-kit'
+import { useState, useEffect } from 'react'
 
 export function GlobalWalletDisplay() {
   const { walletAddress, isConnected, connectWallet, disconnectWallet } = useWallet()
-  const { currentWallet, connect, disconnect } = useWalletKit()
+  const currentAccount = useCurrentAccount()
   const [isConnecting, setIsConnecting] = useState(false)
 
-  const handleConnect = async () => {
-    try {
-      setIsConnecting(true)
-      await connect()
-      
-      // Wait for wallet to be available
-      if (currentWallet?.accounts?.[0]?.address) {
-        const address = currentWallet.accounts[0].address
-        await connectWallet(address)
-      }
-    } catch (error) {
-      console.error('Failed to connect wallet:', error)
-    } finally {
-      setIsConnecting(false)
+  // Sync wallet state when currentAccount changes
+  useEffect(() => {
+    if (currentAccount?.address && !isConnected) {
+      connectWallet(currentAccount.address)
+    } else if (!currentAccount?.address && isConnected) {
+      disconnectWallet()
     }
-  }
-
-  const handleDisconnect = async () => {
-    try {
-      await disconnect()
-      await disconnectWallet()
-    } catch (error) {
-      console.error('Failed to disconnect wallet:', error)
-    }
-  }
+  }, [currentAccount?.address, isConnected, connectWallet, disconnectWallet])
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -58,12 +41,7 @@ export function GlobalWalletDisplay() {
               </p>
             </div>
           </div>
-          <button
-            onClick={handleDisconnect}
-            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium"
-          >
-            Disconnect
-          </button>
+          <ConnectButton />
         </div>
       </div>
     )
@@ -71,23 +49,7 @@ export function GlobalWalletDisplay() {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-      <button
-        onClick={handleConnect}
-        disabled={isConnecting}
-        className="w-full flex items-center justify-center py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-lg transition-colors"
-      >
-        {isConnecting ? (
-          <>
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-            Connecting...
-          </>
-        ) : (
-          <>
-            <span className="material-icons mr-2">account_balance_wallet</span>
-            Connect Wallet
-          </>
-        )}
-      </button>
+      <ConnectButton />
     </div>
   )
 }
