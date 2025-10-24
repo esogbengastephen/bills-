@@ -4,12 +4,18 @@ import './globals.css'
 import '@mysten/dapp-kit/dist/index.css'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { SuiWalletProvider } from '@/components/SuiWalletProvider'
+import { ThemeProvider } from '@/components/ThemeProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'SwitcherFi - Bill Payment App',
   description: 'Mobile-first bill payment application on Sui blockchain',
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
 }
 
 export const viewport: Viewport = {
@@ -28,11 +34,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ErrorBoundary>
-          <SuiWalletProvider>
-            {children}
-          </SuiWalletProvider>
-        </ErrorBoundary>
+        <ThemeProvider>
+          <ErrorBoundary>
+            <SuiWalletProvider>
+              {children}
+            </SuiWalletProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   )

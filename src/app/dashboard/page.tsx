@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import ServiceCard from '@/components/ServiceCard'
 import { SimpleWalletDisplay, NetworkIndicator } from '@/components/SimpleWallet'
 import { SuiWalletProvider } from '@/components/SuiWalletProvider'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 // Services data
 const services = [
@@ -18,6 +20,7 @@ export default function Dashboard() {
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [userData, setUserData] = useState<any>(null)
 
   useEffect(() => {
     // Check if user is authenticated
@@ -27,6 +30,7 @@ export default function Dashboard() {
         const userData = JSON.parse(user)
         if (userData.authenticated) {
           setIsAuthenticated(true)
+          setUserData(userData)
           
           // Store wallet address if user has one
           if (userData.walletAddress && userData.email) {
@@ -152,13 +156,38 @@ export default function Dashboard() {
   return (
     <SuiWalletProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {/* Theme Toggle */}
+        <div className="absolute top-4 right-4 z-10">
+          <ThemeToggle />
+        </div>
+
         {/* Mobile Container */}
         <div className="mobile-container py-6">
-          {/* Header */}
-        {/* Wallet Display - Centered at top */}
-        <div className="flex justify-center mb-6">
-          <SimpleWalletDisplay />
-        </div>
+          {/* User Greeting with Logo Styling */}
+          {userData && (
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                <Image
+                  src="/logo.png"
+                  alt="SwitcherFi Logo"
+                  width={64}
+                  height={64}
+                  className="rounded-lg"
+                />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                Welcome, {userData.name}
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Your referral code: <span className="font-mono font-semibold text-blue-600 dark:text-blue-400">{userData.referralCode}</span>
+              </p>
+            </div>
+          )}
+
+          {/* Wallet Display - Centered */}
+          <div className="flex justify-center mb-6">
+            <SimpleWalletDisplay />
+          </div>
 
         <header className="mb-6">
           <div className="flex items-center justify-between">

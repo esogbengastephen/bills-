@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 interface SignInFormData {
   email: string
@@ -139,14 +141,24 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+
       {/* Main Content */}
       <div className="max-w-md mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="material-icons text-white text-2xl">
-              login
-            </span>
+          <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+            <Image
+              src="/logo.png"
+              alt="SwitcherFi Logo"
+              width={80}
+              height={80}
+              className="rounded-lg"
+              priority
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Welcome Back
