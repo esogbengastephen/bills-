@@ -340,6 +340,5 @@ export default function AirtimePurchase() {
         rel="stylesheet"
       />
     </div>
-    </div>
   )
 }

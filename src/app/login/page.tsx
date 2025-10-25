@@ -4,9 +4,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { GeometricPattern } from '@/components/GeometricPattern'
 
 interface SignInFormData {
   email: string
+}
+
+interface FormErrors {
+  email?: string
 }
 
 export default function SignInPage() {
@@ -14,34 +19,32 @@ export default function SignInPage() {
   const [formData, setFormData] = useState<SignInFormData>({
     email: ''
   })
+  const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState<Partial<SignInFormData>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  // Check if user is already authenticated
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (userData) {
+    // Check if user is already authenticated
+    const user = localStorage.getItem('user')
+    if (user) {
       try {
-        const user = JSON.parse(userData)
-        if (user.authenticated) {
+        const userData = JSON.parse(user)
+        if (userData.authenticated) {
           router.push('/dashboard')
         }
-      } catch (error) {
-        // Invalid data, clear it
-        localStorage.removeItem('user')
+      } catch {
+        // Invalid user data, continue with sign in
       }
     }
   }, [router])
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<SignInFormData> = {}
+    const newErrors: FormErrors = {}
 
-    // Email validation
-    if (!formData.email) {
+    if (!formData.email.trim()) {
       newErrors.email = 'Email is required'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address'
     }
 
@@ -55,13 +58,8 @@ export default function SignInPage() {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
     }
-    // Clear general error and success message when user starts typing
-    if (generalError) {
-      setGeneralError(null)
-    }
-    if (successMessage) {
-      setSuccessMessage(null)
-    }
+    setGeneralError(null)
+    setSuccessMessage(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,57 +72,50 @@ export default function SignInPage() {
     setIsLoading(true)
     setGeneralError(null)
     setSuccessMessage(null)
-    
+
     try {
-      // Check if email exists in database
+      // Check if user exists
       const validationResponse = await fetch('/api/auth/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: formData.email,
-          referralCode: null
+          email: formData.email
         })
       })
 
-      if (!validationResponse.ok) {
-        if (validationResponse.status === 500) {
-          throw new Error('Server configuration error. Please try again later or contact support.')
-        }
-        throw new Error('Network error. Please check your connection and try again.')
-      }
-
       const validationResult = await validationResponse.json()
 
+      if (!validationResponse.ok) {
+        throw new Error(validationResult.error || 'Validation failed')
+      }
+
+      // Check if user exists
       if (validationResult.exists) {
-        // Email exists - redirect directly to dashboard
+        // User exists, redirect to dashboard
         const userData = {
-          email: formData.email,
+          email: validationResult.user.email,
           name: validationResult.user.name,
-          referralCode: validationResult.user.referralCode,
-          authenticated: true,
-          authenticatedAt: new Date().toISOString()
+          referralCode: validationResult.user.referral_code,
+          authenticated: true
         }
-        
-        // Store user data
+
         localStorage.setItem('user', JSON.stringify(userData))
         
         setSuccessMessage('Welcome back! Redirecting to dashboard...')
         
         setTimeout(() => {
           router.push('/dashboard')
-        }, 1000)
-        
+        }, 1500)
       } else {
-        // Email doesn't exist - ask user to sign up
-        throw new Error('User does not exist. Please sign up instead.')
+        // User doesn't exist, show message to sign up
+        setGeneralError('User does not exist. Please sign up first.')
       }
-      
+
     } catch (error) {
       console.error('Sign in error:', error)
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.'
-      setGeneralError(errorMessage)
+      setGeneralError(error instanceof Error ? error.message : 'An unexpected error occurred')
     } finally {
       setIsLoading(false)
     }
@@ -140,36 +131,38 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Theme Toggle */}
-      <div className="absolute top-4 right-4 z-10">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
+      {/* Theme Toggle - Temporarily disabled */}
+      {/* <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
+      </div> */}
+
+      {/* Header with Geometric Pattern */}
+      <div className="relative h-48 bg-gray-900 dark:bg-black">
+        <GeometricPattern />
+        
+        {/* Logo and Title */}
+        <div className="relative z-10 flex items-center justify-center h-full px-6">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <Image
+                src="/logo.png"
+                alt="SwitcherFi Logo"
+                width={64}
+                height={64}
+                className="rounded-lg"
+                priority
+              />
+            </div>
+            <h1 className="text-2xl font-bold text-white">Login</h1>
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-md mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-            <Image
-              src="/logo.png"
-              alt="SwitcherFi Logo"
-              width={80}
-              height={80}
-              className="rounded-lg"
-              priority
-            />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Welcome Back
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Enter your email to continue
-          </p>
-        </div>
-
-        {/* Authentication Form */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="px-6 py-8">
+        {/* Form */}
+        <div className="space-y-6">
           {/* General Error Display */}
           {generalError && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -177,20 +170,11 @@ export default function SignInPage() {
                 <span className="material-icons text-red-600 dark:text-red-400 mr-2 mt-0.5">error</span>
                 <div>
                   <h3 className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">
-                    Sign In Error
+                    Authentication Error
                   </h3>
                   <p className="text-sm text-red-700 dark:text-red-300">
                     {generalError}
                   </p>
-                  <div className="mt-2 text-xs text-red-600 dark:text-red-400">
-                    <strong>Possible solutions:</strong>
-                    <ul className="list-disc list-inside mt-1">
-                      <li>Check your email address</li>
-                      <li>Make sure you have an account</li>
-                      <li>Try signing up if you're new</li>
-                      <li>Contact support if the problem persists</li>
-                    </ul>
-                  </div>
                 </div>
               </div>
             </div>
@@ -214,29 +198,20 @@ export default function SignInPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input */}
+            {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email Address
+                Email
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="material-icons text-gray-400 text-lg">email</span>
-                </div>
-                <input
-                  type="email"
-                  id="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                    errors.email 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                  placeholder="Enter your email address"
-                  disabled={isLoading}
-                />
-              </div>
+              <input
+                type="email"
+                id="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                placeholder="Enter your email address"
+                disabled={isLoading}
+              />
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email}</p>
               )}
@@ -246,24 +221,24 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+              className="w-full bg-black dark:bg-white text-white dark:text-black font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white dark:border-black mr-2"></div>
                   Signing In...
                 </>
               ) : (
                 <>
-                  <span className="material-icons mr-2">check</span>
-                  Sign In
+                  <span className="material-icons mr-2">login</span>
+                  Login
                 </>
               )}
             </button>
           </form>
 
-          {/* Link to Sign Up */}
-          <div className="mt-6 text-center">
+          {/* Sign Up Link */}
+          <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Don't have an account?{' '}
               <button
@@ -271,46 +246,9 @@ export default function SignInPage() {
                 onClick={() => router.push('/')}
                 className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
               >
-                Sign up
+                Sign Up
               </button>
             </p>
-          </div>
-        </div>
-
-        {/* Terms and Privacy */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            By signing in, you agree to our{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline">
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline">
-              Privacy Policy
-            </a>
-          </p>
-        </div>
-
-        {/* Benefits Section */}
-        <div className="mt-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-xl p-6 text-white">
-          <h3 className="font-bold text-lg mb-4">Why Choose PayBills?</h3>
-          <div className="space-y-3">
-            <div className="flex items-center">
-              <span className="material-icons mr-3">security</span>
-              <span>Secure blockchain payments</span>
-            </div>
-            <div className="flex items-center">
-              <span className="material-icons mr-3">check_circle</span>
-              <span>Instant transactions</span>
-            </div>
-            <div className="flex items-center">
-              <span className="material-icons mr-3">savings</span>
-              <span>Low transaction fees</span>
-            </div>
-            <div className="flex items-center">
-              <span className="material-icons mr-3">support_agent</span>
-              <span>24/7 customer support</span>
-            </div>
           </div>
         </div>
       </div>

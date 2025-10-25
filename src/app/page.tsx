@@ -4,11 +4,18 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { GeometricPattern } from '@/components/GeometricPattern'
 
 interface AuthFormData {
   email: string
   name: string
   referralCode: string
+}
+
+interface FormErrors {
+  email?: string
+  name?: string
+  referralCode?: string
 }
 
 export default function SignupPage() {
@@ -18,48 +25,37 @@ export default function SignupPage() {
     name: '',
     referralCode: ''
   })
+  const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState<Partial<AuthFormData>>({})
   const [generalError, setGeneralError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  // Check if user is already authenticated
   useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (userData) {
+    // Check if user is already authenticated
+    const user = localStorage.getItem('user')
+    if (user) {
       try {
-        const user = JSON.parse(userData)
-        if (user.authenticated) {
+        const userData = JSON.parse(user)
+        if (userData.authenticated) {
           router.push('/dashboard')
         }
-      } catch (error) {
-        // Invalid data, clear it
-        localStorage.removeItem('user')
+      } catch {
+        // Invalid user data, continue with signup
       }
     }
   }, [router])
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<AuthFormData> = {}
+    const newErrors: FormErrors = {}
 
-    // Email validation
-    if (!formData.email) {
+    if (!formData.email.trim()) {
       newErrors.email = 'Email is required'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address'
     }
 
-
-    // Name validation (required for signup)
-    if (!formData.name) {
+    if (!formData.name.trim()) {
       newErrors.name = 'Name is required'
-    } else if (formData.name.length < 2) {
-      newErrors.name = 'Name must be at least 2 characters'
-    }
-
-    // Referral code validation (optional for signup)
-    if (formData.referralCode && formData.referralCode.length < 6) {
-      newErrors.referralCode = 'Referral code must be at least 6 characters'
     }
 
     setErrors(newErrors)
@@ -72,13 +68,8 @@ export default function SignupPage() {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }))
     }
-    // Clear general error and success message when user starts typing
-    if (generalError) {
-      setGeneralError(null)
-    }
-    if (successMessage) {
-      setSuccessMessage(null)
-    }
+    setGeneralError(null)
+    setSuccessMessage(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,9 +82,9 @@ export default function SignupPage() {
     setIsLoading(true)
     setGeneralError(null)
     setSuccessMessage(null)
-    
+
     try {
-      // Check if email exists in database
+      // First, validate the user input
       const validationResponse = await fetch('/api/auth/validate', {
         method: 'POST',
         headers: {
@@ -101,71 +92,67 @@ export default function SignupPage() {
         },
         body: JSON.stringify({
           email: formData.email,
-          referralCode: formData.referralCode || null
+          referralCode: formData.referralCode || undefined
         })
       })
 
-      if (!validationResponse.ok) {
-        if (validationResponse.status === 500) {
-          throw new Error('Server configuration error. Please try again later or contact support.')
-        }
-        throw new Error('Network error. Please check your connection and try again.')
-      }
-
       const validationResult = await validationResponse.json()
 
+      if (!validationResponse.ok) {
+        throw new Error(validationResult.error || 'Validation failed')
+      }
+
+      // Check if user already exists
       if (validationResult.exists) {
-        // Email exists - ask user to sign in
         throw new Error('User already exists. Please sign in instead.')
-        
-      } else {
-        // Email doesn't exist - check referral code and proceed with signup
-        if (formData.referralCode && !validationResult.validReferral) {
-          throw new Error('Invalid referral code. Please check and try again.')
-        }
+      }
 
-        // Send verification email for new signup
-        const emailResponse = await fetch('/api/auth/verify-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            name: formData.name,
-            referralCode: formData.referralCode
-          })
-        })
+      // Check referral code validity
+      if (formData.referralCode && !validationResult.validReferral) {
+        throw new Error('Invalid referral code. Please check and try again.')
+      }
 
-        if (!emailResponse.ok) {
-          throw new Error('Failed to send verification email')
-        }
-
-        const emailResult = await emailResponse.json()
-        const verificationCode = emailResult.verificationCode || '123456'
-        const userReferralCode = emailResult.userReferralCode || 'ABC12345'
-        
-        // Store pending verification data
-        localStorage.setItem('pendingVerification', JSON.stringify({
+      // Send verification email
+      const emailResponse = await fetch('/api/auth/verify-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email: formData.email,
           name: formData.name,
-          referralCode: formData.referralCode,
-          userReferralCode: userReferralCode,
-          verificationCode: verificationCode,
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
-        }))
-        
-        setSuccessMessage('Verification email sent! Redirecting to verification page...')
-        
-        setTimeout(() => {
-          router.push('/verify-email')
-        }, 1500)
+          referralCode: formData.referralCode || undefined
+        })
+      })
+
+      const emailResult = await emailResponse.json()
+
+      if (!emailResponse.ok) {
+        throw new Error(emailResult.error || 'Failed to send verification email')
       }
+
+      // Store user data temporarily for verification
+      const tempUserData = {
+        email: formData.email,
+        name: formData.name,
+        referralCode: formData.referralCode || undefined,
+        userReferralCode: emailResult.userReferralCode,
+        verificationCode: emailResult.verificationCode,
+        authenticated: false
+      }
+
+      localStorage.setItem('user', JSON.stringify(tempUserData))
+
+      setSuccessMessage('Verification code sent! Please check your email.')
       
+      // Redirect to verification page after a short delay
+      setTimeout(() => {
+        router.push('/verify-email')
+      }, 2000)
+
     } catch (error) {
-      console.error('Authentication error:', error)
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.'
-      setGeneralError(errorMessage)
+      console.error('Signup error:', error)
+      setGeneralError(error instanceof Error ? error.message : 'An unexpected error occurred')
     } finally {
       setIsLoading(false)
     }
@@ -183,36 +170,37 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Theme Toggle */}
-      <div className="absolute top-4 right-4 z-10">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
+      {/* Theme Toggle - Temporarily disabled */}
+      {/* <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
+      </div> */}
+
+      {/* Header with Geometric Pattern */}
+      <div className="relative h-48 bg-gray-900 dark:bg-black">
+        <GeometricPattern />
+        
+        {/* Back Arrow and Title */}
+        <div className="relative z-10 flex items-center justify-between h-full px-6">
+          <button
+            onClick={() => router.back()}
+            className="w-8 h-8 flex items-center justify-center text-white hover:text-gray-300 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          
+          <h1 className="text-2xl font-bold text-white">Sign Up</h1>
+          
+          <div className="w-8 h-8"></div> {/* Spacer for centering */}
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-md mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-            <Image
-              src="/logo.png"
-              alt="SwitcherFi Logo"
-              width={80}
-              height={80}
-              className="rounded-lg"
-              priority
-            />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Create Account
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Sign up to start making payments
-          </p>
-        </div>
-
-        {/* Authentication Form */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="px-6 py-8">
+        {/* Form */}
+        <div className="space-y-6">
           {/* General Error Display */}
           {generalError && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -257,90 +245,63 @@ export default function SignupPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="material-icons text-gray-400 text-lg">email</span>
-                </div>
-                <input
-                  type="email"
-                  id="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                    errors.email 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                  placeholder="Enter your email address"
-                  disabled={isLoading}
-                />
-              </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email}</p>
-              )}
-            </div>
-
-            {/* Name Input */}
+            {/* Name Field */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Full Name
+                Name
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="material-icons text-gray-400 text-lg">person</span>
-                </div>
-                <input
-                  type="text"
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                    errors.name 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                  placeholder="Enter your full name"
-                  disabled={isLoading}
-                />
-              </div>
+              <input
+                type="text"
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                placeholder="Enter your full name"
+                disabled={isLoading}
+              />
               {errors.name && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name}</p>
               )}
             </div>
 
-            {/* Referral Code Input */}
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                placeholder="Enter your email address"
+                disabled={isLoading}
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Referral Code Field */}
             <div>
               <label htmlFor="referralCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Referral Code
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="material-icons text-gray-400 text-lg">card_giftcard</span>
-                </div>
-                <input
-                  type="text"
-                  id="referralCode"
-                  value={formData.referralCode}
-                  onChange={(e) => handleInputChange('referralCode', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                    errors.referralCode 
-                      ? 'border-red-300 dark:border-red-600' 
-                      : 'border-gray-300 dark:border-gray-600'
-                  } bg-white dark:bg-gray-700 text-gray-900 dark:text-white`}
-                  placeholder="Enter referral code"
-                  disabled={isLoading}
-                />
-              </div>
+              <input
+                type="text"
+                id="referralCode"
+                value={formData.referralCode}
+                onChange={(e) => handleInputChange('referralCode', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                placeholder="Enter referral code (optional)"
+                disabled={isLoading}
+              />
               {errors.referralCode && (
                 <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.referralCode}</p>
               )}
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Referral code is optional. Leave blank if you don't have one.
+                Optional: Enter a referral code if you have one
               </p>
             </div>
 
@@ -348,24 +309,24 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+              className="w-full bg-black dark:bg-white text-white dark:text-black font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Processing...
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white dark:border-black mr-2"></div>
+                  Creating Account...
                 </>
               ) : (
                 <>
                   <span className="material-icons mr-2">check</span>
-                  Create Account
+                  Sign Up
                 </>
               )}
             </button>
           </form>
 
-          {/* Link to Sign In */}
-          <div className="mt-6 text-center">
+          {/* Sign In Link */}
+          <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Already have an account?{' '}
               <button
@@ -373,46 +334,9 @@ export default function SignupPage() {
                 onClick={() => router.push('/login')}
                 className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
               >
-                Sign in
+                Sign In
               </button>
             </p>
-          </div>
-        </div>
-
-        {/* Terms and Privacy */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            By creating an account, you agree to our{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline">
-              Terms of Service
-            </a>{' '}
-            and{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline">
-              Privacy Policy
-            </a>
-          </p>
-        </div>
-
-        {/* Benefits Section */}
-        <div className="mt-8 bg-gradient-to-r from-green-500 to-blue-600 rounded-xl p-6 text-white">
-          <h3 className="font-bold text-lg mb-4">Why Join PayBills?</h3>
-          <div className="space-y-3">
-            <div className="flex items-center">
-              <span className="material-icons mr-3">security</span>
-              <span>Secure blockchain payments</span>
-            </div>
-            <div className="flex items-center">
-              <span className="material-icons mr-3">check_circle</span>
-              <span>Instant transactions</span>
-            </div>
-            <div className="flex items-center">
-              <span className="material-icons mr-3">savings</span>
-              <span>Low transaction fees</span>
-            </div>
-            <div className="flex items-center">
-              <span className="material-icons mr-3">support_agent</span>
-              <span>24/7 customer support</span>
-            </div>
           </div>
         </div>
       </div>
