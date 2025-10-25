@@ -112,9 +112,9 @@ function SuccessPageContent() {
                   {amount ? `₦${parseFloat(amount).toLocaleString()}` : 'N/A'}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Transaction ID:</span>
-                <span className="text-gray-900 dark:text-gray-100 font-mono text-sm">
+              <div className="flex flex-col">
+                <span className="text-gray-600 dark:text-gray-400 mb-1">Transaction ID:</span>
+                <span className="text-gray-900 dark:text-gray-100 font-mono text-xs break-all">
                   {transactionId || 'N/A'}
                 </span>
               </div>
