@@ -6,18 +6,24 @@ import Image from 'next/image'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { GeometricPattern } from '@/components/GeometricPattern'
 
-interface SignInFormData {
+interface AuthFormData {
   email: string
+  name: string
+  referralCode: string
 }
 
 interface FormErrors {
   email?: string
+  name?: string
+  referralCode?: string
 }
 
-export default function SignInPage() {
+export default function SignupPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState<SignInFormData>({
-    email: ''
+  const [formData, setFormData] = useState<AuthFormData>({
+    email: '',
+    name: '',
+    referralCode: ''
   })
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -34,7 +40,7 @@ export default function SignInPage() {
           router.push('/dashboard')
         }
       } catch {
-        // Invalid user data, continue with sign in
+        // Invalid user data, continue with signup
       }
     }
   }, [router])
@@ -48,11 +54,15 @@ export default function SignInPage() {
       newErrors.email = 'Please enter a valid email address'
     }
 
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required'
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleInputChange = (field: keyof SignInFormData, value: string) => {
+  const handleInputChange = (field: keyof AuthFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     // Clear error when user starts typing
     if (errors[field]) {
@@ -74,14 +84,15 @@ export default function SignInPage() {
     setSuccessMessage(null)
 
     try {
-      // Check if user exists
+      // First, validate the user input
       const validationResponse = await fetch('/api/auth/validate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: formData.email
+          email: formData.email,
+          referralCode: formData.referralCode || undefined
         })
       })
 
@@ -91,30 +102,56 @@ export default function SignInPage() {
         throw new Error(validationResult.error || 'Validation failed')
       }
 
-      // Check if user exists
+      // Check if user already exists
       if (validationResult.exists) {
-        // User exists, redirect to dashboard
-        const userData = {
-          email: validationResult.user.email,
-          name: validationResult.user.name,
-          referralCode: validationResult.user.referral_code,
-          authenticated: true
-        }
-
-        localStorage.setItem('user', JSON.stringify(userData))
-        
-        setSuccessMessage('Welcome back! Redirecting to dashboard...')
-        
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 1500)
-      } else {
-        // User doesn't exist, show message to sign up
-        setGeneralError('User does not exist. Please sign up first.')
+        throw new Error('User already exists. Please sign in instead.')
       }
 
+      // Check referral code validity
+      if (formData.referralCode && !validationResult.validReferral) {
+        throw new Error('Invalid referral code. Please check and try again.')
+      }
+
+      // Send verification email
+      const emailResponse = await fetch('/api/auth/verify-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          name: formData.name,
+          referralCode: formData.referralCode || undefined
+        })
+      })
+
+      const emailResult = await emailResponse.json()
+
+      if (!emailResponse.ok) {
+        throw new Error(emailResult.error || 'Failed to send verification email')
+      }
+
+      // Store user data temporarily for verification
+      const tempUserData = {
+        email: formData.email,
+        name: formData.name,
+        referralCode: formData.referralCode || undefined,
+        userReferralCode: emailResult.userReferralCode,
+        verificationCode: emailResult.verificationCode,
+        authenticated: false
+      }
+
+      localStorage.setItem('user', JSON.stringify(tempUserData))
+
+      setSuccessMessage('Verification code sent! Please check your email.')
+      
+      // Redirect to verification page after a short delay
+      setTimeout(() => {
+        router.push('/verify-email')
+      }, 2000)
+
     } catch (error) {
-      console.error('Sign in error:', error)
+      console.error('Signup error:', error)
       setGeneralError(error instanceof Error ? error.message : 'An unexpected error occurred')
     } finally {
       setIsLoading(false)
@@ -123,7 +160,9 @@ export default function SignInPage() {
 
   const resetForm = () => {
     setFormData({
-      email: ''
+      email: '',
+      name: '',
+      referralCode: ''
     })
     setErrors({})
     setGeneralError(null)
@@ -154,7 +193,7 @@ export default function SignInPage() {
                 priority
               />
             </div>
-            <h1 className="text-2xl font-bold text-white">Login</h1>
+            <h1 className="text-2xl font-bold text-white">Sign Up</h1>
           </div>
         </div>
       </div>
@@ -175,6 +214,15 @@ export default function SignInPage() {
                   <p className="text-sm text-red-700 dark:text-red-300">
                     {generalError}
                   </p>
+                  <div className="mt-2 text-xs text-red-600 dark:text-red-400">
+                    <strong>Possible solutions:</strong>
+                    <ul className="list-disc list-inside mt-1">
+                      <li>Check your internet connection</li>
+                      <li>Verify your email and referral code</li>
+                      <li>Try refreshing the page</li>
+                      <li>Contact support if the problem persists</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
@@ -198,6 +246,25 @@ export default function SignInPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Name Field */}
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                placeholder="Enter your full name"
+                disabled={isLoading}
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name}</p>
+              )}
+            </div>
+
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -217,6 +284,28 @@ export default function SignInPage() {
               )}
             </div>
 
+            {/* Referral Code Field */}
+            <div>
+              <label htmlFor="referralCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Referral Code
+              </label>
+              <input
+                type="text"
+                id="referralCode"
+                value={formData.referralCode}
+                onChange={(e) => handleInputChange('referralCode', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                placeholder="Enter referral code (optional)"
+                disabled={isLoading}
+              />
+              {errors.referralCode && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.referralCode}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Optional: Enter a referral code if you have one
+              </p>
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
@@ -226,27 +315,27 @@ export default function SignInPage() {
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white dark:border-black mr-2"></div>
-                  Signing In...
+                  Creating Account...
                 </>
               ) : (
                 <>
-                  <span className="material-icons mr-2">login</span>
-                  Login
+                  <span className="material-icons mr-2">check</span>
+                  Sign Up
                 </>
               )}
             </button>
           </form>
 
-          {/* Sign Up Link */}
+          {/* Sign In Link */}
           <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
+              Already have an account?{' '}
               <button
                 type="button"
-                onClick={() => router.push('/signup')}
+                onClick={() => router.push('/')}
                 className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
               >
-                Sign Up
+                Sign In
               </button>
             </p>
           </div>

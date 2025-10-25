@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 
 interface WalletContextType {
   walletAddress: string | null
+  walletAddresses: string[]
   isConnected: boolean
   connectWallet: (address: string) => void
   disconnectWallet: () => void
@@ -14,25 +15,42 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined)
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
+  const [walletAddresses, setWalletAddresses] = useState<string[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Load wallet address from localStorage on mount
-    const savedAddress = localStorage.getItem('walletAddress')
-    if (savedAddress) {
-      setWalletAddress(savedAddress)
-      setIsConnected(true)
+    // Load wallet addresses from localStorage on mount
+    const savedAddresses = localStorage.getItem('walletAddresses')
+    if (savedAddresses) {
+      try {
+        const addresses = JSON.parse(savedAddresses)
+        setWalletAddresses(addresses)
+        if (addresses.length > 0) {
+          setWalletAddress(addresses[0]) // Use first address as primary
+          setIsConnected(true)
+        }
+      } catch (error) {
+        console.error('Error parsing saved wallet addresses:', error)
+      }
     }
     setIsLoading(false)
   }, [])
 
   const connectWallet = async (address: string) => {
     try {
-      // Save to localStorage
-      localStorage.setItem('walletAddress', address)
+      // Add to addresses array if not already present
+      const newAddresses = walletAddresses.includes(address) 
+        ? walletAddresses 
+        : [...walletAddresses, address]
+      
+      setWalletAddresses(newAddresses)
       setWalletAddress(address)
       setIsConnected(true)
+
+      // Save to localStorage
+      localStorage.setItem('walletAddresses', JSON.stringify(newAddresses))
+      localStorage.setItem('walletAddress', address)
 
       // Get current user data
       const userData = localStorage.getItem('user')
@@ -42,7 +60,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         // Update user data with wallet address
         const updatedUserData = {
           ...user,
-          walletAddress: address
+          walletAddress: address,
+          walletAddresses: newAddresses
         }
         localStorage.setItem('user', JSON.stringify(updatedUserData))
 
@@ -71,24 +90,29 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const disconnectWallet = async () => {
     try {
-      // Remove from localStorage
-      localStorage.removeItem('walletAddress')
+      // Clear all addresses
+      setWalletAddresses([])
       setWalletAddress(null)
       setIsConnected(false)
+
+      // Remove from localStorage
+      localStorage.removeItem('walletAddresses')
+      localStorage.removeItem('walletAddress')
 
       // Get current user data
       const userData = localStorage.getItem('user')
       if (userData) {
         const user = JSON.parse(userData)
         
-        // Update user data to remove wallet address
+        // Update user data to remove wallet addresses
         const updatedUserData = {
           ...user,
-          walletAddress: null
+          walletAddress: null,
+          walletAddresses: []
         }
         localStorage.setItem('user', JSON.stringify(updatedUserData))
 
-        // Update wallet address in Supabase (set to null)
+        // Update wallet addresses in Supabase (set to empty array)
         const response = await fetch('/api/auth/wallet', {
           method: 'POST',
           headers: {
@@ -101,9 +125,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         })
 
         if (response.ok) {
-          console.log('Wallet address removed from Supabase successfully')
+          console.log('Wallet addresses removed from Supabase successfully')
         } else {
-          console.error('Failed to remove wallet address from Supabase')
+          console.error('Failed to remove wallet addresses from Supabase')
         }
       }
     } catch (error) {
@@ -114,6 +138,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   return (
     <WalletContext.Provider value={{
       walletAddress,
+      walletAddresses,
       isConnected,
       connectWallet,
       disconnectWallet,
