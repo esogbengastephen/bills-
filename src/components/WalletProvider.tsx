@@ -22,13 +22,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Load wallet addresses from localStorage on mount
     const savedAddresses = localStorage.getItem('walletAddresses')
+    console.log('WalletProvider: Loading saved addresses:', savedAddresses)
+    
     if (savedAddresses) {
       try {
         const addresses = JSON.parse(savedAddresses)
+        console.log('WalletProvider: Parsed addresses:', addresses)
         setWalletAddresses(addresses)
         if (addresses.length > 0) {
           setWalletAddress(addresses[0]) // Use first address as primary
           setIsConnected(true)
+          console.log('WalletProvider: Set primary address:', addresses[0])
         }
       } catch (error) {
         console.error('Error parsing saved wallet addresses:', error)
@@ -39,10 +43,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const connectWallet = async (address: string) => {
     try {
+      console.log('WalletProvider: Connecting wallet:', address)
+      console.log('WalletProvider: Current addresses:', walletAddresses)
+      
       // Add to addresses array if not already present
       const newAddresses = walletAddresses.includes(address) 
         ? walletAddresses 
         : [...walletAddresses, address]
+      
+      console.log('WalletProvider: New addresses array:', newAddresses)
       
       setWalletAddresses(newAddresses)
       setWalletAddress(address)
@@ -51,6 +60,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       // Save to localStorage
       localStorage.setItem('walletAddresses', JSON.stringify(newAddresses))
       localStorage.setItem('walletAddress', address)
+      console.log('WalletProvider: Saved to localStorage')
 
       // Get current user data
       const userData = localStorage.getItem('user')
@@ -90,6 +100,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const disconnectWallet = async () => {
     try {
+      console.log('WalletProvider: Disconnecting wallet')
+      
       // Clear all addresses
       setWalletAddresses([])
       setWalletAddress(null)
@@ -98,6 +110,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       // Remove from localStorage
       localStorage.removeItem('walletAddresses')
       localStorage.removeItem('walletAddress')
+      console.log('WalletProvider: Removed from localStorage')
 
       // Get current user data
       const userData = localStorage.getItem('user')

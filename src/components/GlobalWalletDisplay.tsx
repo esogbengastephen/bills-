@@ -5,18 +5,32 @@ import { ConnectButton, useCurrentAccount } from '@mysten/dapp-kit'
 import { useState, useEffect } from 'react'
 
 export function GlobalWalletDisplay() {
-  const { walletAddress, isConnected, connectWallet, disconnectWallet } = useWallet()
+  const { walletAddress, isConnected, connectWallet, disconnectWallet, isLoading } = useWallet()
   const currentAccount = useCurrentAccount()
   const [isConnecting, setIsConnecting] = useState(false)
 
   // Sync wallet state when currentAccount changes
   useEffect(() => {
     if (currentAccount?.address && !isConnected) {
+      console.log('Connecting wallet from GlobalWalletDisplay:', currentAccount.address)
       connectWallet(currentAccount.address)
     } else if (!currentAccount?.address && isConnected) {
+      console.log('Disconnecting wallet from GlobalWalletDisplay')
       disconnectWallet()
     }
   }, [currentAccount?.address, isConnected, connectWallet, disconnectWallet])
+
+  // Show loading state while wallet context is initializing
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Loading wallet...</span>
+        </div>
+      </div>
+    )
+  }
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`
