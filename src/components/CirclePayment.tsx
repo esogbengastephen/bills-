@@ -102,7 +102,7 @@ export function CirclePayment({
         body: JSON.stringify({
           action: 'estimate-fees',
           sourceWalletId: walletId,
-          destinationAddress: '0x6220763d10670deccf70079ecf12b94b5ea20c9e016975228d73807f68db10d0', // Treasury address
+          destinationAddress: '0xd08868079ac67d47cbd6634147bdcf96ac097921b42fe2f241a168b10ce9bdb9', // Treasury address
           amount,
           tokenType
         })
@@ -142,7 +142,7 @@ export function CirclePayment({
         body: JSON.stringify({
           action: 'create-payment',
           sourceWalletId: walletId,
-          destinationAddress: '0x6220763d10670deccf70079ecf12b94b5ea20c9e016975228d73807f68db10d0', // Treasury address
+          destinationAddress: '0xd08868079ac67d47cbd6634147bdcf96ac097921b42fe2f241a168b10ce9bdb9', // Treasury address
           amount,
           tokenType,
           description
