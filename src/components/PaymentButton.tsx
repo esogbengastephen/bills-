@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useCurrentAccount, useSignTransaction } from '@mysten/dapp-kit'
+import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 import { normalizeSuiAddress } from '@mysten/sui/utils'
 import { suiClient, getTokenAddresses } from '@/lib/sui'
@@ -28,7 +28,7 @@ export function PaymentButton({
   className = ''
 }: PaymentButtonProps) {
   const currentAccount = useCurrentAccount()
-  const { mutate: signTransaction } = useSignTransaction()
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
   const [isProcessing, setIsProcessing] = useState(false)
 
   const handlePayment = async () => {
@@ -110,7 +110,7 @@ export function PaymentButton({
       }
 
       // Execute the transaction
-      signTransaction(
+      signAndExecuteTransaction(
         {
           transaction: txb
         },
