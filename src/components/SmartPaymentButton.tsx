@@ -120,26 +120,36 @@ export function PaymentButton({
         tx.transferObjects([coin], normalizeSuiAddress(adminWallet))
       } else if (tokenType === 'USDC') {
         // Get USDC coins
-        const coins = await suiClient.getCoins({
-          owner: currentAccount.address,
-          coinType: tokenAddresses.USDC
-        })
+        console.log('🔍 Fetching USDC coins for wallet:', currentAccount.address)
         
-        if (coins.data.length === 0) {
-          throw new Error('No USDC coins found')
+        try {
+          const coins = await suiClient.getCoins({
+            owner: currentAccount.address,
+            coinType: tokenAddresses.USDC
+          })
+          
+          console.log('✅ USDC coins fetched:', coins.data.length)
+          
+          if (!coins.data || coins.data.length === 0) {
+            throw new Error('No USDC coins found. Please ensure you have USDC in your wallet.')
+          }
+          
+          // Use first coin
+          const primaryCoin = coins.data[0]
+          
+          // If multiple coins, merge them
+          if (coins.data.length > 1) {
+            console.log('🔗 Merging multiple USDC coins')
+            tx.mergeCoins(primaryCoin.coinObjectId, coins.data.slice(1).map(c => c.coinObjectId))
+          }
+          
+          // Split required amount
+          const [paymentCoin] = tx.splitCoins(primaryCoin.coinObjectId, [amountInSmallestUnit])
+          tx.transferObjects([paymentCoin], normalizeSuiAddress(adminWallet))
+        } catch (error: any) {
+          console.error('❌ Error fetching USDC coins:', error)
+          throw new Error(`Failed to fetch USDC coins: ${error.message}`)
         }
-        
-        // Use first coin
-        const primaryCoin = coins.data[0]
-        
-        // If multiple coins, merge them
-        if (coins.data.length > 1) {
-          tx.mergeCoins(primaryCoin.coinObjectId, coins.data.slice(1).map(c => c.coinObjectId))
-        }
-        
-        // Split required amount
-        const [paymentCoin] = tx.splitCoins(primaryCoin.coinObjectId, [amountInSmallestUnit])
-        tx.transferObjects([paymentCoin], normalizeSuiAddress(adminWallet))
       } else {
         throw new Error(`Unsupported token type: ${tokenType}`)
       }
