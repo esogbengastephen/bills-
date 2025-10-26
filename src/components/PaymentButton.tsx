@@ -74,14 +74,39 @@ export function PaymentButton({
         const [coin] = txb.splitCoins(txb.gas, [amountInSmallestUnit])
         txb.transferObjects([coin], normalizeSuiAddress(treasuryAddress))
       } else {
-        // Transfer other tokens to treasury
-        const tokenAddress = tokenType === 'USDC' ? tokenAddresses.USDC : tokenAddresses.USDT
+        // Transfer other tokens (USDC/USDT) to treasury
+        // First, we need to get the user's coin objects for the token
+        const balanceResult = await suiClient.getBalance({
+          owner: currentAccount.address,
+          coinType: tokenType === 'USDC' ? tokenAddresses.USDC : tokenAddresses.USDT
+        })
         
-        const [coin] = txb.splitCoins(
-          txb.object(tokenAddress),
-          [amountInSmallestUnit]
-        )
-        txb.transferObjects([coin], normalizeSuiAddress(treasuryAddress))
+        if (BigInt(balanceResult.totalBalance) < BigInt(amountInSmallestUnit)) {
+          throw new Error(`Insufficient ${tokenType} balance`)
+        }
+        
+        // Get the coin objects for the specific token
+        const coinType = tokenType === 'USDC' ? tokenAddresses.USDC : tokenAddresses.USDT
+        const coins = await suiClient.getCoins({
+          owner: currentAccount.address,
+          coinType
+        })
+        
+        // Merge coins if needed
+        if (coins.data.length > 0) {
+          const primaryCoin = coins.data[0]
+          
+          // If we have multiple coins, merge them first
+          if (coins.data.length > 1) {
+            txb.mergeCoins(primaryCoin.coinObjectId, coins.data.slice(1).map(c => c.coinObjectId))
+          }
+          
+          // Split the required amount
+          const [coin] = txb.splitCoins(primaryCoin.coinObjectId, [amountInSmallestUnit])
+          txb.transferObjects([coin], normalizeSuiAddress(treasuryAddress))
+        } else {
+          throw new Error(`No ${tokenType} coins found in wallet`)
+        }
       }
 
       // Execute the transaction
