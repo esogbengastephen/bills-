@@ -266,6 +266,37 @@ export function PaymentButton({
         status: 'success'
       })
 
+      // Save transaction to Supabase
+      try {
+        const userEmail = localStorage.getItem('userEmail')
+        const user = localStorage.getItem('user')
+        
+        if (userEmail && user) {
+          const userData = JSON.parse(user)
+          await fetch('/api/transactions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userEmail,
+              userAddress: currentAccount.address,
+              serviceType,
+              tokenType,
+              amount: parseFloat(amount),
+              serviceDetails: JSON.stringify(serviceDetails),
+              txDigest,
+              status: 'success'
+            })
+          })
+          
+          console.log('✅ Transaction saved to Supabase')
+        }
+      } catch (error) {
+        console.warn('Failed to save transaction to Supabase:', error)
+        // Don't block the UI if Supabase save fails
+      }
+
       logger.logServicePurchase(
         currentAccount.address,
         serviceType,

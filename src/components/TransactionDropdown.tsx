@@ -86,6 +86,8 @@ export default function TransactionDropdown() {
           return
         }
 
+        console.log('🔍 Fetching transactions for:', userEmail)
+
         const response = await fetch(`/api/transactions?email=${encodeURIComponent(userEmail)}`, {
           method: 'GET',
           headers: {
@@ -93,20 +95,29 @@ export default function TransactionDropdown() {
           },
         })
 
+        console.log('📡 Response status:', response.status)
+
         if (!response.ok) {
+          const errorText = await response.text()
+          console.error('❌ Response error:', errorText)
           throw new Error(`HTTP error! status: ${response.status}`)
         }
 
         const data = await response.json()
 
+        console.log('✅ Transactions data:', data)
+
         if (!data.success) {
+          console.error('❌ API returned error:', data.error)
           throw new Error(data.error || 'Failed to fetch transactions')
         }
 
         // Get last 5 transactions
-        setTransactions(data.transactions?.slice(0, 5) || [])
+        const fetchedTransactions = data.transactions?.slice(0, 5) || []
+        console.log('📊 Fetched transactions:', fetchedTransactions.length)
+        setTransactions(fetchedTransactions)
       } catch (err) {
-        console.error('Error fetching transactions:', err)
+        console.error('❌ Error fetching transactions:', err)
         setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
         setLoading(false)
