@@ -120,6 +120,20 @@ export function PaymentButton({
         tx.transferObjects([coin], normalizeSuiAddress(adminWallet))
       } else if (tokenType === 'USDC') {
         console.log('🔍 Processing USDC transfer to admin wallet')
+        console.log('📍 Admin wallet:', adminWallet)
+        console.log('💰 Amount (smallest units):', amountInSmallestUnit)
+        console.log('📍 USDC coin type:', tokenAddresses.USDC)
+        
+        // Check SUI balance for gas first
+        const suiBalance = await suiClient.getBalance({
+          owner: currentAccount.address
+        })
+        const balanceInSUI = parseFloat(suiBalance.totalBalance) / 1e9
+        console.log('⛽ SUI balance for gas:', balanceInSUI, 'SUI')
+        
+        if (balanceInSUI < 0.01) {
+          throw new Error('Insufficient SUI for gas fees. Please ensure you have at least 0.01 SUI in your wallet to pay for transaction fees.')
+        }
         
         try {
           // Get USDC balance and coins
@@ -134,7 +148,7 @@ export function PaymentButton({
             })
           ])
           
-          console.log('✅ USDC balance:', balance.totalBalance)
+          console.log('✅ USDC balance:', balance.totalBalance, 'smallest units')
           console.log('✅ USDC coins found:', coins.data.length)
           
           if (BigInt(balance.totalBalance) < BigInt(amountInSmallestUnit)) {
@@ -145,8 +159,11 @@ export function PaymentButton({
             throw new Error('No USDC coins found. Please ensure you have USDC in your wallet.')
           }
           
+          console.log('📦 Coin IDs:', coins.data.map(c => ({ id: c.coinObjectId, balance: c.balance })))
+          
           // Use first coin
           const primaryCoin = coins.data[0]
+          console.log('🎯 Using primary coin:', primaryCoin.coinObjectId)
           
           // If multiple coins, merge them first
           if (coins.data.length > 1) {
@@ -169,7 +186,7 @@ export function PaymentButton({
             normalizeSuiAddress(adminWallet)
           )
           
-          console.log(`✅ USDC ${amountInSmallestUnit} will be sent to admin wallet`)
+          console.log(`✅ USDC payment coin created, ${amountInSmallestUnit} will be transferred to admin wallet:`, adminWallet)
         } catch (error: any) {
           console.error('❌ Error processing USDC:', error)
           throw new Error(`Failed to process USDC payment: ${error.message}`)
