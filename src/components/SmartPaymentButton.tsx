@@ -38,8 +38,8 @@ export function PaymentButton({
   const [lastTxDigest, setLastTxDigest] = useState<string | null>(null)
   const [showCirclePayment, setShowCirclePayment] = useState(false)
 
-  // Check if this is a Circle-supported token
-  const isCircleToken = tokenType === 'USDC'
+  // Check if this is a Circle-supported token (disabled for now, using native Sui USDC)
+  const isCircleToken = false // tokenType === 'USDC' - Changed to false to use native Sui USDC
 
   const handlePayment = async () => {
     if (!currentAccount?.address) {

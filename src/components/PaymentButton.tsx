@@ -40,6 +40,24 @@ export function PaymentButton({
     setIsProcessing(true)
 
     try {
+      // Check SUI balance for gas if paying with non-SUI token
+      if (tokenType !== 'SUI') {
+        const suiBalance = await suiClient.getBalance({
+          owner: currentAccount.address
+        })
+        
+        const balanceInSUI = parseFloat(suiBalance.totalBalance) / 1e9
+        
+        // Require at least 0.01 SUI for gas
+        if (balanceInSUI < 0.01) {
+          onError?.('Insufficient SUI for gas fees. Please ensure you have at least 0.01 SUI in your wallet to pay for transaction fees.')
+          setIsProcessing(false)
+          return
+        }
+        
+        console.log(`SUI balance check: ${balanceInSUI} SUI (minimum 0.01 required for gas)`)
+      }
+
       // Create payment transaction
       const txb = new Transaction()
       const tokenAddresses = getTokenAddresses()
