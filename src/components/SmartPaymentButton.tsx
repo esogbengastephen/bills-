@@ -119,16 +119,27 @@ export function PaymentButton({
         const [coin] = tx.splitCoins(tx.gas, [amountInSmallestUnit])
         tx.transferObjects([coin], normalizeSuiAddress(adminWallet))
       } else if (tokenType === 'USDC') {
-        // Get USDC coins
-        console.log('🔍 Fetching USDC coins for wallet:', currentAccount.address)
+        console.log('🔍 Processing USDC transfer to admin wallet')
         
         try {
-          const coins = await suiClient.getCoins({
-            owner: currentAccount.address,
-            coinType: tokenAddresses.USDC
-          })
+          // Get USDC balance and coins
+          const [balance, coins] = await Promise.all([
+            suiClient.getBalance({
+              owner: currentAccount.address,
+              coinType: tokenAddresses.USDC
+            }),
+            suiClient.getCoins({
+              owner: currentAccount.address,
+              coinType: tokenAddresses.USDC
+            })
+          ])
           
-          console.log('✅ USDC coins fetched:', coins.data.length)
+          console.log('✅ USDC balance:', balance.totalBalance)
+          console.log('✅ USDC coins found:', coins.data.length)
+          
+          if (BigInt(balance.totalBalance) < BigInt(amountInSmallestUnit)) {
+            throw new Error(`Insufficient USDC balance. Required: ${amountInSmallestUnit}, Available: ${balance.totalBalance}`)
+          }
           
           if (!coins.data || coins.data.length === 0) {
             throw new Error('No USDC coins found. Please ensure you have USDC in your wallet.')
@@ -137,18 +148,31 @@ export function PaymentButton({
           // Use first coin
           const primaryCoin = coins.data[0]
           
-          // If multiple coins, merge them
+          // If multiple coins, merge them first
           if (coins.data.length > 1) {
             console.log('🔗 Merging multiple USDC coins')
-            tx.mergeCoins(primaryCoin.coinObjectId, coins.data.slice(1).map(c => c.coinObjectId))
+            tx.mergeCoins(
+              primaryCoin.coinObjectId, 
+              coins.data.slice(1).map(c => c.coinObjectId)
+            )
           }
           
-          // Split required amount
-          const [paymentCoin] = tx.splitCoins(primaryCoin.coinObjectId, [amountInSmallestUnit])
-          tx.transferObjects([paymentCoin], normalizeSuiAddress(adminWallet))
+          // Split the exact amount needed
+          const [paymentCoin] = tx.splitCoins(
+            primaryCoin.coinObjectId, 
+            [amountInSmallestUnit]
+          )
+          
+          // Transfer to admin wallet
+          tx.transferObjects(
+            [paymentCoin], 
+            normalizeSuiAddress(adminWallet)
+          )
+          
+          console.log(`✅ USDC ${amountInSmallestUnit} will be sent to admin wallet`)
         } catch (error: any) {
-          console.error('❌ Error fetching USDC coins:', error)
-          throw new Error(`Failed to fetch USDC coins: ${error.message}`)
+          console.error('❌ Error processing USDC:', error)
+          throw new Error(`Failed to process USDC payment: ${error.message}`)
         }
       } else {
         throw new Error(`Unsupported token type: ${tokenType}`)
