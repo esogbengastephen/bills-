@@ -8,6 +8,7 @@ import { GlobalWalletDisplay } from '@/components/GlobalWalletDisplay'
 import { NetworkIndicator } from '@/components/SimpleWallet'
 import { SuiWalletProvider } from '@/components/SuiWalletProvider'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import TransactionDropdown from '@/components/TransactionDropdown'
 
 // Services data
 const services = [
@@ -207,32 +208,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Transaction History Link */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mr-3">
-                  <span className="material-icons text-gray-600 dark:text-gray-400">
-                    history
-                  </span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white">
-                    Transaction History
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    View all your payments
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => router.push('/transaction-history')}
-                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                <span className="material-icons">arrow_forward_ios</span>
-              </button>
-            </div>
-          </div>
+          {/* Transaction History Dropdown */}
+          <TransactionDropdown />
 
         </main>
         </div>
