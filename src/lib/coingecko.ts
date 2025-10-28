@@ -66,6 +66,34 @@ class CoinGeckoService {
     }
   }
 
+  // Get USDC price in NGN and USD (USDC ~ $1; we fetch NGN rate)
+  async getUsdcPrice(): Promise<{ usdc: { ngn: number; usd: number } }> {
+    const cacheKey = 'usdc-price'
+    const cached = this.cache.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      const c: any = cached.data
+      if (c?.usdc) return { usdc: { ngn: c.usdc.ngn, usd: c.usdc.usd } }
+    }
+
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/simple/price?ids=usd-coin&vs_currencies=ngn,usd`
+      )
+      if (!response.ok) throw new Error(`CoinGecko API error: ${response.status}`)
+      const data = await response.json()
+      const result = { usdc: { ngn: data['usd-coin']?.ngn ?? 1500, usd: data['usd-coin']?.usd ?? 1 } }
+      this.cache.set(cacheKey, { data: result as unknown as CoinGeckoPrice, timestamp: Date.now() })
+      return result
+    } catch (error) {
+      console.error('Error fetching USDC price from CoinGecko:', error)
+      if (cached) {
+        const c: any = cached.data
+        if (c?.usdc) return { usdc: { ngn: c.usdc.ngn, usd: c.usdc.usd } }
+      }
+      return { usdc: { ngn: 1500, usd: 1 } }
+    }
+  }
+
   // Convert SUI amount to Naira
   async convertSuiToNaira(suiAmount: number): Promise<PriceConversion> {
     const priceData = await this.getSuiPrice()
@@ -91,6 +119,36 @@ class CoinGeckoService {
 
     return {
       suiAmount,
+      nairaAmount,
+      usdAmount,
+      exchangeRate,
+      lastUpdated: new Date().toISOString()
+    }
+  }
+
+  // Convert USDC amount to Naira
+  async convertUsdcToNaira(usdcAmount: number): Promise<PriceConversion> {
+    const priceData = await this.getUsdcPrice()
+    const exchangeRate = priceData.usdc.ngn
+    const nairaAmount = usdcAmount * exchangeRate
+    const usdAmount = usdcAmount * priceData.usdc.usd
+    return {
+      suiAmount: usdcAmount, // reuse as generic token amount
+      nairaAmount,
+      usdAmount,
+      exchangeRate,
+      lastUpdated: new Date().toISOString()
+    }
+  }
+
+  // Convert Naira to USDC
+  async convertNairaToUsdc(nairaAmount: number): Promise<PriceConversion> {
+    const priceData = await this.getUsdcPrice()
+    const exchangeRate = priceData.usdc.ngn
+    const usdcAmount = nairaAmount / exchangeRate
+    const usdAmount = usdcAmount * priceData.usdc.usd
+    return {
+      suiAmount: usdcAmount, // reuse as generic token amount
       nairaAmount,
       usdAmount,
       exchangeRate,
@@ -138,6 +196,14 @@ export async function convertSuiToNaira(suiAmount: number): Promise<PriceConvers
 
 export async function convertNairaToSui(nairaAmount: number): Promise<PriceConversion> {
   return await coinGeckoService.convertNairaToSui(nairaAmount)
+}
+
+export async function convertUsdcToNaira(usdcAmount: number): Promise<PriceConversion> {
+  return await coinGeckoService.convertUsdcToNaira(usdcAmount)
+}
+
+export async function convertNairaToUsdc(nairaAmount: number): Promise<PriceConversion> {
+  return await coinGeckoService.convertNairaToUsdc(nairaAmount)
 }
 
 export function formatCurrency(amount: number, currency: 'NGN' | 'USD' | 'SUI'): string {

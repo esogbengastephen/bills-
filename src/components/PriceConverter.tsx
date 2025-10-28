@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { convertSuiToNaira, convertNairaToSui, formatCurrency, PriceConversion } from '@/lib/coingecko'
+import { convertSuiToNaira, convertNairaToSui, convertUsdcToNaira, convertNairaToUsdc, formatCurrency, PriceConversion } from '@/lib/coingecko'
 
 interface PriceConverterProps {
   tokenAmount?: number
@@ -38,9 +38,8 @@ export function PriceConverter({
     setError(null)
 
     try {
-      // For now, we'll use SUI conversion for all tokens
-      // In a real implementation, you'd have separate conversion functions for each token
-      const result = await convertSuiToNaira(amount)
+      const isUSDC = symbol?.toUpperCase() === 'USDC'
+      const result = isUSDC ? await convertUsdcToNaira(amount) : await convertSuiToNaira(amount)
       setConversion(result)
       setLastUpdated(new Date().toLocaleTimeString())
       onNairaChange?.(result.nairaAmount)
@@ -63,8 +62,8 @@ export function PriceConverter({
     setError(null)
 
     try {
-      // For now, we'll use SUI conversion for all tokens
-      const result = await convertNairaToSui(amount)
+      const isUSDC = symbol?.toUpperCase() === 'USDC'
+      const result = isUSDC ? await convertNairaToUsdc(amount) : await convertNairaToSui(amount)
       setConversion(result)
       setLastUpdated(new Date().toLocaleTimeString())
       onTokenChange?.(result.suiAmount)
