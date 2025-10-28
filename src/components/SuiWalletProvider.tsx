@@ -20,7 +20,8 @@ export function SuiWalletProvider({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
-        <WalletProvider>
+        {/* Enable autoConnect so previously selected wallet reconnects on reload */}
+        <WalletProvider autoConnect>
           {children}
         </WalletProvider>
       </SuiClientProvider>

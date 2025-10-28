@@ -9,16 +9,16 @@ export function GlobalWalletDisplay() {
   const currentAccount = useCurrentAccount()
   const [isConnecting, setIsConnecting] = useState(false)
 
-  // Sync wallet state when currentAccount changes
+  // Sync wallet state when currentAccount changes (no forced disconnects on null during reload)
   useEffect(() => {
-    if (currentAccount?.address && !isConnected) {
-      console.log('Connecting wallet from GlobalWalletDisplay:', currentAccount.address)
-      connectWallet(currentAccount.address)
-    } else if (!currentAccount?.address && isConnected) {
-      console.log('Disconnecting wallet from GlobalWalletDisplay')
-      disconnectWallet()
+    if (currentAccount?.address) {
+      if (!isConnected || walletAddress !== currentAccount.address) {
+        console.log('Connecting wallet from GlobalWalletDisplay:', currentAccount.address)
+        connectWallet(currentAccount.address)
+      }
     }
-  }, [currentAccount?.address, isConnected, connectWallet, disconnectWallet])
+    // Do not auto-disconnect here; users disconnect explicitly via wallet UI or sign out
+  }, [currentAccount?.address, isConnected, walletAddress, connectWallet])
 
   // Show loading state while wallet context is initializing
   if (isLoading) {
